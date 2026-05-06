@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACCU QUICK — Register</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #030213;
+      --primary-hover: #1a1830;
+      --background: #ffffff;
+      --foreground: #0a0a0b;
+      --muted: #ececf0;
+      --muted-foreground: #71717a;
+      --accent: #6366f1;
+      --accent-secondary: #8b5cf6;
+      --accent-glow: rgba(99, 102, 241, 0.12);
+      --destructive: #d4183d;
+      --border: rgba(0, 0, 0, 0.1);
+      --input-background: #f3f3f5;
+      --ring: #a1a1aa;
+      --success: #22c55e;
+      --success-bg: rgba(34, 197, 94, 0.08);
+      --radius: 0.625rem;
+      --font-sans: 'Instrument Sans', -apple-system, sans-serif;
+      --font-mono: 'Geist Mono', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font-sans);
+      background: var(--background);
+      color: var(--foreground);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ── */
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── Left Panel — Branding ── */
+    .brand-panel {
+      flex: 0 0 44%;
+      background: #f3f3f5;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      top: -200px;
+      right: -200px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .brand-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -150px;
+      left: -150px;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Dot grid pattern */
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+    }
+
+    .brand-logo {
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand-logo .logo-mark {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 15px;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-text {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+      color: #101828;
+    }
+
+    .logo-text span {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-hero {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-right: 24px;
+    }
+
+    .brand-hero h1 {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 40px;
+      line-height: 1.12;
+      letter-spacing: -0.035em;
+      color: #101828;
+      margin-bottom: 20px;
+    }
+
+    .brand-hero h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-hero p {
+      font-size: 15px;
+      line-height: 1.7;
+      color: #6a7282;
+      max-width: 380px;
+    }
+
+    /* Floating doc icons */
+    .floating-elements {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .float-el {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .float-el:nth-child(1) { top: 18%; right: 15%; animation-delay: 0s; }
+    .float-el:nth-child(2) { top: 48%; right: 8%; animation-delay: 2s; }
+    .float-el:nth-child(3) { bottom: 25%; right: 22%; animation-delay: 4s; }
+    .float-el:nth-child(4) { top: 32%; left: 12%; animation-delay: 5.5s; width: 40px; height: 40px; font-size: 16px; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); opacity: 0.6; }
+      50% { transform: translateY(-10px); opacity: 1; }
+    }
+
+    .brand-footer {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      gap: 40px;
+    }
+
+    .brand-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .brand-stat .value {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      font-size: 22px;
+      background: linear-gradient(135deg, #407AF5, #8B5CF6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-stat .label {
+      font-size: 12px;
+      color: #71717a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* ── Right Panel — Form ── */
+    .form-panel {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px;
+      background: var(--background);
+      position: relative;
+    }
+
+    .form-container {
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+    }
+
+    /* ── Form Steps ── */
+    .form-step {
+      display: none;
+      animation: fadeSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .form-step.active { display: block; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-header {
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .step-header h2 {
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 24px;
+      letter-spacing: -0.025em;
+      color: var(--foreground);
+      margin-bottom: 8px;
+    }
+
+    .step-header p {
+      font-size: 14px;
+      color: var(--muted-foreground);
+      line-height: 1.5;
+    }
+
+    /* ── Social Login Buttons ── */
+    .social-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .btn-social {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 0;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-social:hover {
+      background: var(--input-background);
+      border-color: rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-social:active {
+      transform: scale(0.98);
+    }
+
+    .btn-social .icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-social .icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .divider span {
+      font-size: 12px;
+      color: var(--muted-foreground);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+    }
+
+    /* ── Phone Input ── */
+    .phone-input-group {
+      margin-bottom: 16px;
+    }
+
+    .phone-input-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--foreground);
+      margin-bottom: 6px;
+    }
+
+    .phone-input-wrapper {
+      display: flex;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--input-background);
+      overflow: hidden;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      height: 40px;
+    }
+
+    .phone-input-wrapper:focus-within {
+      border-color: var(--ring);
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .country-select {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px 0 12px;
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      cursor: pointer;
+      min-width: 92px;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .country-select option {
+      background: var(--background);
+      color: var(--foreground);
+    }
+
+    .phone-input {
+      flex: 1;
+      padding: 0 12px;
+      background: transparent;
+      border: none;
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .phone-input::placeholder {
+      color: var(--muted-foreground);
+    }
+
+    /* ── OTP Input ── */
+    .otp-group {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .otp-input {
+      width: 48px;
+      height: 48px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-weight: 500;
+      font-size: 20px;
+      color: var(--foreground);
+      background: var(--input-background);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .otp-input:focus {
+      border-color: var(--ring);
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+      background: var(--background);
+    }
+
+    .otp-input.filled {
+      border-color: var(--accent);
+      background: var(--background);
+    }
+
+    .resend-timer {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted-foreground);
+      margin-bottom: 24px;
+    }
+
+    .resend-timer a {
+      color: var(--foreground);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .resend-timer a:hover { color: var(--accent); }
+    .resend-timer a.disabled { color: var(--muted-foreground); text-decoration: none; pointer-events: none; }
+
+    /* ── Text Inputs ── */
+    .input-group {
+      margin-bottom: 14px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--foreground);
+      margin-bottom: 6px;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 0 12px;
+      height: 40px;
+      background: var(--input-background);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .input-field::placeholder { color: var(--muted-foreground); }
+
+    .input-field:focus {
+      border-color: var(--ring);
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+      background: var(--background);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .input-row .input-group { flex: 1; }
+
+    /* ── Primary Button ── */
+    .btn-primary {
+      width: 100%;
+      padding: 0;
+      height: 40px;
+      background: linear-gradient(135deg, #407AF5, #8B5CF6);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: var(--font-sans);
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #3568DC, #7C4FE0);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── Back Button ── */
+    .btn-back {
+      background: none;
+      border: none;
+      color: var(--muted-foreground);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 6px 0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.15s ease;
+    }
+
+    .btn-back:hover { color: var(--foreground); }
+
+    /* ── Button Base ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-sans);
+      font-weight: 500;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Sizes */
+    .btn-sm { height: 32px; padding: 0 12px; font-size: 13px; }
+    .btn-md { height: 36px; padding: 0 16px; font-size: 14px; }
+    .btn-lg { height: 40px; padding: 0 32px; font-size: 14px; }
+
+    /* Default */
+    .btn-default { background: #030213; color: #fff; }
+    .btn-default:hover { background: #1a1830; }
+
+    /* Destructive */
+    .btn-destructive { background: #d4183d; color: #fff; }
+    .btn-destructive:hover { background: #b8132f; }
+
+    /* Outline */
+    .btn-outline { background: #fff; color: #101828; border: 1px solid rgba(0,0,0,0.1); }
+    .btn-outline:hover { background: #f5f5f5; }
+
+    /* Secondary */
+    .btn-secondary { background: #ececf0; color: #101828; }
+    .btn-secondary:hover { background: #dfdfe5; }
+
+    /* Ghost */
+    .btn-ghost { background: transparent; color: #101828; }
+    .btn-ghost:hover { background: rgba(0,0,0,0.05); }
+
+    /* Link */
+    .btn-link { background: transparent; color: #101828; text-decoration: underline; }
+    .btn-link:hover { color: #030213; }
+
+    /* ── Terms ── */
+    .terms {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted-foreground);
+      margin-top: 16px;
+      line-height: 1.6;
+    }
+
+    .terms a {
+      color: var(--foreground);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .terms a:hover { color: var(--accent); }
+
+    /* ── Login Link ── */
+    .login-link {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--muted-foreground);
+    }
+
+    .login-link a {
+      color: var(--foreground);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      font-weight: 500;
+    }
+
+    .login-link a:hover { color: var(--accent); }
+
+    /* ── Success State ── */
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--success-bg);
+      border: 1.5px solid var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .success-icon svg {
+      width: 28px;
+      height: 28px;
+      color: var(--success);
+    }
+
+    @keyframes scaleIn {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .success-content {
+      text-align: center;
+    }
+
+    .success-content h2 {
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 24px;
+      color: var(--foreground);
+      margin-bottom: 8px;
+      letter-spacing: -0.025em;
+    }
+
+    .success-content p {
+      color: var(--muted-foreground);
+      font-size: 14px;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    /* ── Loading Spinner ── */
+    .btn-primary .spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.5s linear infinite;
+      margin: 0 auto;
+    }
+
+    .btn-primary.loading .btn-text { display: none; }
+    .btn-primary.loading .spinner { display: inline-block; }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .brand-panel { display: none; }
+      .form-panel { padding: 32px 24px; }
+    }
+
+    @media (max-width: 480px) {
+      .form-container { max-width: 100%; }
+      .otp-input { width: 42px; height: 42px; font-size: 18px; }
+      .step-header h2 { font-size: 20px; }
+      .input-row { flex-direction: column; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- ── Left: Brand Panel ── -->
+    <aside class="brand-panel">
+      <div class="grid-overlay"></div>
+      <div class="floating-elements">
+        <div class="float-el">📄</div>
+        <div class="float-el">⚡</div>
+        <div class="float-el">🔍</div>
+        <div class="float-el">📊</div>
+      </div>
+
+      <a href="ocr.html" class="brand-logo" style="text-decoration:none;">
+        <div class="logo-mark">
+          <div class="logo-icon">AQ</div>
+          <div class="logo-text">ACCU<span>QUICK</span></div>
+        </div>
+      </a>
+
+      <div class="brand-hero">
+        <h1>Results in <em>minutes</em>.</h1>
+        <p>Join thousands of professionals using ACCU QUICK for intelligent OCR, document analysis, and multi-language content processing.</p>
+      </div>
+
+      <div class="brand-footer">
+        <div class="brand-stat">
+          <div class="value">2M+</div>
+          <div class="label">Docs Processed</div>
+        </div>
+        <div class="brand-stat">
+          <div class="value">99.4%</div>
+          <div class="label">Accuracy</div>
+        </div>
+        <div class="brand-stat">
+          <div class="value">1min</div>
+          <div class="label">Avg. Time</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── Right: Form Panel ── -->
+    <main class="form-panel">
+      <div class="form-container">
+
+        <!-- STEP 0: Login -->
+        <div class="form-step active" id="step-0">
+          <div class="step-header">
+            <h2>Welcome back</h2>
+            <p>Login to your account</p>
+          </div>
+
+          <div class="social-buttons">
+            <button class="btn-social" onclick="loginGoogle()">
+              <span class="icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 001 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+              </span>
+              Login with Google
+            </button>
+          </div>
+
+          <div class="divider">
+            <span>or login with phone</span>
+          </div>
+
+          <div class="phone-input-group">
+            <label>Mobile Phone Number</label>
+            <div class="phone-input-wrapper">
+              <select class="country-select" id="login-country-code">
+                <option value="+66">🇹🇭 +66</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+81">🇯🇵 +81</option>
+                <option value="+82">🇰🇷 +82</option>
+                <option value="+86">🇨🇳 +86</option>
+                <option value="+91">🇮🇳 +91</option>
+                <option value="+65">🇸🇬 +65</option>
+              </select>
+              <input type="tel" class="phone-input" id="login-phone" placeholder="812 345 678" maxlength="12">
+            </div>
+          </div>
+
+          <button class="btn-primary" onclick="loginSendOTP()">
+            <span class="btn-text">Login</span>
+            <div class="spinner"></div>
+          </button>
+
+          <div class="login-link">
+            Don't have an account? <a href="#" onclick="goToStep(1); return false;">Create account</a>
+          </div>
+        </div>
+
+        <!-- STEP 1: Register -->
+        <div class="form-step" id="step-1">
+          <div class="step-header">
+            <h2>Create your account</h2>
+            <p>Choose how you'd like to register</p>
+          </div>
+
+          <div class="social-buttons">
+            <button class="btn-social" id="btn-google" onclick="selectGoogle()">
+              <span class="icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 001 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+              </span>
+              Continue with Google
+            </button>
+          </div>
+
+          <div class="divider">
+            <span>or register with phone</span>
+          </div>
+
+          <div class="phone-input-group">
+            <label>Mobile Phone Number</label>
+            <div class="phone-input-wrapper">
+              <select class="country-select" id="country-code">
+                <option value="+66">🇹🇭 +66</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+81">🇯🇵 +81</option>
+                <option value="+82">🇰🇷 +82</option>
+                <option value="+86">🇨🇳 +86</option>
+                <option value="+91">🇮🇳 +91</option>
+                <option value="+65">🇸🇬 +65</option>
+              </select>
+              <input type="tel" class="phone-input" id="phone-number" placeholder="812 345 678" maxlength="12">
+            </div>
+          </div>
+
+          <button class="btn-primary" id="btn-send-otp" onclick="sendOTP()">
+            <span class="btn-text">Send Verification Code</span>
+            <div class="spinner"></div>
+          </button>
+
+          <div class="terms">
+            By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+          </div>
+
+          <div class="login-link">
+            Already have an account? <a href="#" onclick="goToStep(0); return false;">Login</a>
+          </div>
+        </div>
+
+        <!-- STEP 2: Verify OTP -->
+        <div class="form-step" id="step-2">
+          <button class="btn-back" onclick="goToStep(1)">← Back</button>
+
+          <div class="step-header">
+            <h2>Verify your number</h2>
+            <p>Enter the 6-digit code sent to <strong id="display-phone" style="color: var(--accent);">+66 812 345 678</strong></p>
+          </div>
+
+          <div class="otp-group" id="otp-group">
+            <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="0">
+            <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="1">
+            <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="2">
+            <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="3">
+            <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="4">
+            <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="5">
+          </div>
+
+          <div class="resend-timer">
+            Didn't receive the code? <a id="resend-link" class="disabled" onclick="resendOTP()">Resend in <span id="timer">30</span>s</a>
+          </div>
+
+          <button class="btn-primary" id="btn-verify" onclick="verifyOTP()" disabled>
+            <span class="btn-text">Verify & Continue</span>
+            <div class="spinner"></div>
+          </button>
+        </div>
+
+        <!-- STEP 3: Profile Info -->
+        <div class="form-step" id="step-3">
+          <button class="btn-back" onclick="goToStep(2)">← Back</button>
+
+          <div class="step-header">
+            <h2>Complete your profile</h2>
+            <p>Tell us a bit about yourself</p>
+          </div>
+
+          <div class="input-row">
+            <div class="input-group">
+              <label>First Name</label>
+              <input type="text" class="input-field" id="first-name" placeholder="Somchai">
+            </div>
+            <div class="input-group">
+              <label>Last Name</label>
+              <input type="text" class="input-field" id="last-name" placeholder="Jaidee">
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" class="input-field" id="email" placeholder="somchai@company.com">
+          </div>
+
+          <div class="input-group">
+            <label>Organization</label>
+            <input type="text" class="input-field" id="organization" placeholder="Acme Corp">
+          </div>
+
+          <div class="input-group">
+            <label>Role</label>
+            <select class="input-field" id="role">
+              <option value="" disabled selected style="color: var(--muted-foreground);">Select your role</option>
+              <option value="developer">Developer</option>
+              <option value="data-scientist">Data Scientist</option>
+              <option value="product-manager">Product Manager</option>
+              <option value="operations">Operations</option>
+              <option value="executive">Executive</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <button class="btn-primary" onclick="completeProfile()">
+            <span class="btn-text">Create Account</span>
+            <div class="spinner"></div>
+          </button>
+        </div>
+
+        <!-- STEP 4: Success -->
+        <div class="form-step" id="step-4">
+          <div class="success-content">
+            <div class="success-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <h2>Welcome to ACCU QUICK!</h2>
+            <p>Your account has been created successfully. You're ready to start processing documents.</p>
+            <button class="btn-primary" onclick="goToDashboard()">
+              <span class="btn-text">Go to Dashboard →</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ── State ──
+    let currentStep = 0;
+    let authMethod = 'phone';
+    let timerInterval = null;
+
+    // ── Step Navigation ──
+    function goToStep(step) {
+      document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+      document.getElementById(`step-${step}`).classList.add('active');
+      currentStep = step;
+    }
+
+    // ── Login ──
+    function loginGoogle() {
+      const btn = event.target.closest('.btn-social');
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.background = 'var(--accent-glow)';
+      setTimeout(() => {
+        alert('Logged in with Google successfully!');
+      }, 800);
+    }
+
+    function loginSendOTP() {
+      const phone = document.getElementById('login-phone').value.trim();
+      if (!phone || phone.length < 8) {
+        shakeInput(document.querySelector('#step-0 .phone-input-wrapper'));
+        return;
+      }
+      const btn = event.target.closest('.btn-primary');
+      btn.classList.add('loading');
+      btn.disabled = true;
+      const countryCode = document.getElementById('login-country-code').value;
+      document.getElementById('display-phone').textContent = `${countryCode} ${phone}`;
+      setTimeout(() => {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        goToStep(2);
+        startTimer();
+        document.querySelector('.otp-input').focus();
+      }, 1200);
+    }
+
+    // ── Google Auth ──
+    function selectGoogle() {
+      authMethod = 'google';
+      const btn = document.getElementById('btn-google');
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.background = 'var(--accent-glow)';
+      setTimeout(() => {
+        goToStep(3);
+        document.getElementById('first-name').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('email').focus();
+      }, 800);
+    }
+
+    // ── Phone OTP ──
+    function sendOTP() {
+      const phone = document.getElementById('phone-number').value.trim();
+      if (!phone || phone.length < 8) {
+        shakeInput(document.querySelector('#step-1 .phone-input-wrapper'));
+        return;
+      }
+      const countryCode = document.getElementById('country-code').value;
+      document.getElementById('display-phone').textContent = `${countryCode} ${phone}`;
+      const btn = document.getElementById('btn-send-otp');
+      btn.classList.add('loading');
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        authMethod = 'phone';
+        goToStep(2);
+        startTimer();
+        document.querySelector('.otp-input').focus();
+      }, 1200);
+    }
+
+    // ── OTP Input Handling ──
+    const otpInputs = document.querySelectorAll('.otp-input');
+    otpInputs.forEach((input, idx) => {
+      input.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (val && idx < 5) otpInputs[idx + 1].focus();
+        input.classList.toggle('filled', !!val);
+        checkOTPComplete();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && idx > 0) {
+          otpInputs[idx - 1].focus();
+          otpInputs[idx - 1].value = '';
+          otpInputs[idx - 1].classList.remove('filled');
+        }
+      });
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        pasted.split('').forEach((char, i) => {
+          if (otpInputs[i]) {
+            otpInputs[i].value = char;
+            otpInputs[i].classList.add('filled');
+          }
+        });
+        if (pasted.length > 0) otpInputs[Math.min(pasted.length, 5)].focus();
+        checkOTPComplete();
+      });
+    });
+
+    function checkOTPComplete() {
+      const filled = [...otpInputs].every(i => i.value.length === 1);
+      document.getElementById('btn-verify').disabled = !filled;
+    }
+
+    function verifyOTP() {
+      const btn = document.getElementById('btn-verify');
+      btn.classList.add('loading');
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.classList.remove('loading');
+        clearInterval(timerInterval);
+        goToStep(3);
+      }, 1000);
+    }
+
+    // ── Timer ──
+    function startTimer() {
+      let seconds = 30;
+      const timerEl = document.getElementById('timer');
+      const resendLink = document.getElementById('resend-link');
+      resendLink.classList.add('disabled');
+      timerInterval = setInterval(() => {
+        seconds--;
+        timerEl.textContent = seconds;
+        if (seconds <= 0) {
+          clearInterval(timerInterval);
+          resendLink.classList.remove('disabled');
+          resendLink.innerHTML = 'Resend code';
+        }
+      }, 1000);
+    }
+
+    function resendOTP() {
+      const link = document.getElementById('resend-link');
+      if (link.classList.contains('disabled')) return;
+      link.innerHTML = 'Resend in <span id="timer">30</span>s';
+      startTimer();
+    }
+
+    // ── Profile ──
+    function completeProfile() {
+      const firstName = document.getElementById('first-name').value.trim();
+      const lastName = document.getElementById('last-name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      if (!firstName || !lastName || !email) {
+        if (!firstName) shakeInput(document.getElementById('first-name'));
+        if (!lastName) shakeInput(document.getElementById('last-name'));
+        if (!email) shakeInput(document.getElementById('email'));
+        return;
+      }
+      const btn = event.target.closest('.btn-primary');
+      btn.classList.add('loading');
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.classList.remove('loading');
+        goToStep(4);
+      }, 1500);
+    }
+
+    function goToDashboard() {
+      alert('Redirecting to dashboard...');
+    }
+
+    // ── Shake Animation ──
+    function shakeInput(el) {
+      el.style.borderColor = 'var(--destructive)';
+      el.style.animation = 'shake 0.3s ease';
+      setTimeout(() => {
+        el.style.borderColor = '';
+        el.style.animation = '';
+      }, 500);
+    }
+
+    const shakeStyle = document.createElement('style');
+    shakeStyle.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-6px); }
+        50% { transform: translateX(6px); }
+        75% { transform: translateX(-3px); }
+      }
+    `;
+    document.head.appendChild(shakeStyle);
+  </script>
+</body>
+</html>
