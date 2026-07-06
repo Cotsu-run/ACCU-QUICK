@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NOTIFS, type Notif } from "../lib/mockData";
+import { useLang } from "../lib/LanguageContext";
 
 const ICONS: Record<Notif["ico"], React.ReactNode> = {
   checkC: (
@@ -46,6 +47,7 @@ const IcCheckCircle = (
 );
 
 export default function Notifications() {
+  const { t } = useLang();
   const [notifs, setNotifs] = useState<Notif[]>(NOTIFS);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
@@ -100,7 +102,7 @@ export default function Notifications() {
         ref={btnRef}
         className={`hero-notif-btn${unreadCount > 0 ? " has-unread" : ""}`}
         type="button"
-        aria-label="Notifications"
+        aria-label={t("notifTitle")}
         aria-haspopup="dialog"
         onClick={() => setOpen((o) => !o)}
       >
@@ -124,7 +126,7 @@ export default function Notifications() {
             style={{ left: pos.left, top: pos.top }}
           >
             <div className="notif-head">
-              <h3 id="notif-title">Notifications</h3>
+              <h3 id="notif-title">{t("notifTitle")}</h3>
               <span className="notif-count" data-n={unreadCount}>{unreadCount > 0 ? unreadCount : ""}</span>
               <button
                 className="notif-markall"
@@ -132,14 +134,14 @@ export default function Notifications() {
                 onClick={markAllRead}
                 disabled={unreadCount === 0}
               >
-                Mark all read
+                {t("notifMarkAll")}
               </button>
             </div>
             <div className="notif-list">
               {notifs.length === 0 ? (
                 <div className="notif-empty">
                   {IcCheckCircle}
-                  <p>You&rsquo;re all caught up</p>
+                  <p>{t("notifEmpty")}</p>
                 </div>
               ) : (
                 notifs.map((n) => (
@@ -160,7 +162,7 @@ export default function Notifications() {
               )}
             </div>
             <div className="notif-foot">
-              <button type="button" onClick={() => setOpen(false)}>View all activity</button>
+              <button type="button" onClick={() => setOpen(false)}>{t("notifViewAll")}</button>
             </div>
           </div>
         </div>

@@ -2,6 +2,17 @@
 
 import { useState } from "react";
 import { SPECS, type SpecCat, type SpecRow, type SpecStatus } from "../lib/mockData";
+import { useLang } from "../lib/LanguageContext";
+import type { TKey } from "../lib/i18n";
+
+const CAT_KEYS: Record<"All" | SpecCat, TKey> = {
+  All: "specCatAll",
+  Dimensions: "specCatDimensions",
+  Colors: "specCatColors",
+  Typography: "specCatTypography",
+  Images: "specCatImages",
+  Barcodes: "specCatBarcodes",
+};
 
 const IcCheckC = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -86,6 +97,7 @@ function statusIcon(status: SpecStatus) {
 }
 
 export default function SpecPanel({ specs = SPECS }: { specs?: SpecRow[] }) {
+  const { t } = useLang();
   const [cat, setCat] = useState<"All" | SpecCat>("All");
   const [failOnly, setFailOnly] = useState(false);
 
@@ -103,9 +115,9 @@ export default function SpecPanel({ specs = SPECS }: { specs?: SpecRow[] }) {
   const fails = specs.filter((s) => s.status === "fail");
 
   const statCards: { label: string; c: number; co: string; ic: React.ReactNode }[] = [
-    { label: "Passed", c: counts.pass, co: "green", ic: IcCheckC },
-    { label: "Failed", c: counts.fail, co: "red", ic: IcXC },
-    { label: "Warnings", c: counts.warning, co: "yellow", ic: IcAlertC },
+    { label: t("specPassed"), c: counts.pass, co: "green", ic: IcCheckC },
+    { label: t("specFailed"), c: counts.fail, co: "red", ic: IcXC },
+    { label: t("specWarnings"), c: counts.warning, co: "yellow", ic: IcAlertC },
   ];
 
   return (
@@ -119,7 +131,7 @@ export default function SpecPanel({ specs = SPECS }: { specs?: SpecRow[] }) {
             </svg>
             <div className="score-text" style={{ color: sColor }}>{score}%</div>
           </div>
-          <div className="stat-label">Compliance Score</div>
+          <div className="stat-label">{t("specCompliance")}</div>
         </div>
         {statCards.map((s) => (
           <div className="stat-card-h" key={s.label}>
@@ -141,7 +153,7 @@ export default function SpecPanel({ specs = SPECS }: { specs?: SpecRow[] }) {
               aria-pressed={cat === c}
               onClick={() => setCat(c)}
             >
-              {c !== "All" && CAT_ICONS[c]} {c}
+              {c !== "All" && CAT_ICONS[c]} {t(CAT_KEYS[c])}
             </button>
           ))}
         </div>
@@ -152,9 +164,9 @@ export default function SpecPanel({ specs = SPECS }: { specs?: SpecRow[] }) {
             style={failOnly ? { background: "rgba(212,24,61,0.06)", borderColor: "rgba(212,24,61,0.3)", color: "var(--red)" } : undefined}
             onClick={() => setFailOnly((v) => !v)}
           >
-            {IcEye} Show Failed Only
+            {IcEye} {t("specShowFail")}
           </button>
-          <button className="btn-sm">{IcDl} Export Report</button>
+          <button className="btn-sm">{IcDl} {t("specExport")}</button>
         </div>
       </div>
 
@@ -162,12 +174,12 @@ export default function SpecPanel({ specs = SPECS }: { specs?: SpecRow[] }) {
         <table className="spec-table">
           <thead>
             <tr>
-              <th scope="col">Category</th>
-              <th scope="col">Specification</th>
-              <th scope="col">Expected</th>
-              <th scope="col">Actual</th>
-              <th scope="col" style={{ textAlign: "center" }}>Status</th>
-              <th scope="col">Details</th>
+              <th scope="col">{t("specHCat")}</th>
+              <th scope="col">{t("specHSpec")}</th>
+              <th scope="col">{t("specHExp")}</th>
+              <th scope="col">{t("specHAct")}</th>
+              <th scope="col" style={{ textAlign: "center" }}>{t("specHStatus")}</th>
+              <th scope="col">{t("specHDet")}</th>
             </tr>
           </thead>
           <tbody>
@@ -175,7 +187,7 @@ export default function SpecPanel({ specs = SPECS }: { specs?: SpecRow[] }) {
               const rc = s.status === "fail" ? "spec-fail" : s.status === "warning" ? "spec-warning" : "";
               return (
                 <tr key={s.id} className={rc}>
-                  <td><span className="spec-cat">{CAT_ICONS[s.cat]} {s.cat}</span></td>
+                  <td><span className="spec-cat">{CAT_ICONS[s.cat]} {t(CAT_KEYS[s.cat])}</span></td>
                   <td><span className="spec-name">{s.spec}</span></td>
                   <td><code className="spec-code">{s.expected}</code></td>
                   <td><code className={`spec-code ${s.status}`}>{s.actual}</code></td>
@@ -192,11 +204,11 @@ export default function SpecPanel({ specs = SPECS }: { specs?: SpecRow[] }) {
         <div className="alert alert-red" style={{ marginTop: 16 }}>
           {IcXC}
           <div>
-            <div className="alert-title">Critical Issues Requiring Attention</div>
+            <div className="alert-title">{t("specCritical")}</div>
             <ul>
               {fails.map((s) => (
                 <li key={s.id}>
-                  <strong>{s.cat} — {s.spec}:</strong> {s.details || `Expected ${s.expected}, got ${s.actual}`}
+                  <strong>{t(CAT_KEYS[s.cat])} — {s.spec}:</strong> {s.details || `Expected ${s.expected}, got ${s.actual}`}
                 </li>
               ))}
             </ul>

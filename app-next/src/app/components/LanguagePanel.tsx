@@ -1,6 +1,7 @@
 "use client";
 
 import { GRAMMAR, type GrammarIssue } from "../lib/mockData";
+import { useLang } from "../lib/LanguageContext";
 
 const IcAlertT = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -23,6 +24,7 @@ export default function LanguagePanel({
   confidence?: number;
   grammar?: GrammarIssue[];
 }) {
+  const { t } = useLang();
   const medium = grammar.filter((g) => g.severity === "medium").length;
   const low = grammar.filter((g) => g.severity === "low").length;
 
@@ -30,7 +32,7 @@ export default function LanguagePanel({
     <>
       <div className="lang-results-grid">
         <div className="lang-card">
-          <div className="lbl">Detected Language</div>
+          <div className="lbl">{t("langDetected")}</div>
           <div className="lang-detected">
             <span className="flag">{flag}</span>
             <div>
@@ -40,26 +42,26 @@ export default function LanguagePanel({
           </div>
         </div>
         <div className="lang-card">
-          <div className="lbl">Confidence Score</div>
+          <div className="lbl">{t("langConf")}</div>
           <div className="confidence-value">{confidence}%</div>
           <div className="confidence-bar">
             <div className="confidence-fill" style={{ width: `${Math.round(confidence)}%` }} />
           </div>
         </div>
         <div className="lang-card">
-          <div className="lbl">Grammar Issues</div>
+          <div className="lbl">{t("langGrammar")}</div>
           <div className="grammar-count">{grammar.length}</div>
-          <div className="grammar-detail">{medium} medium, {low} low</div>
+          <div className="grammar-detail">{medium} {t("sevMedium")}, {low} {t("sevLow")}</div>
         </div>
       </div>
 
       <div className="grammar-panel">
         <div className="grammar-panel-header">
-          {IcAlertT} Grammar &amp; Style Issues
+          {IcAlertT} {t("langGrammarTitle")}
         </div>
         {grammar.map((g, i) => (
           <div className="grammar-item" key={i}>
-            <span className={`severity-badge severity-${g.severity}`}>{g.severity}</span>
+            <span className={`severity-badge severity-${g.severity}`}>{g.severity === "medium" ? t("sevMedium") : t("sevLow")}</span>
             <div>
               <div className="msg">{g.message}</div>
               <div className="meta">Line {g.line} · {g.type}</div>

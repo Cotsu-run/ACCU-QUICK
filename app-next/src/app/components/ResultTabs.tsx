@@ -1,19 +1,21 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useLang } from "../lib/LanguageContext";
+import type { TKey } from "../lib/i18n";
 
 type TabId = "extract" | "language" | "spec";
 
 const TABS: {
   id: TabId;
-  label: string;
-  sublabel?: string;
+  labelKey: TKey;
+  sublabelKey?: TKey;
   icon: React.ReactNode;
 }[] = [
   {
     id: "extract",
-    label: "Text Extraction",
-    sublabel: "& Compare",
+    labelKey: "rtExtract",
+    sublabelKey: "rtExtractSub",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 7V5a2 2 0 0 1 2-2h2" />
@@ -26,7 +28,7 @@ const TABS: {
   },
   {
     id: "language",
-    label: "Language Check",
+    labelKey: "rtLanguage",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="m5 8 6 6" />
@@ -40,8 +42,8 @@ const TABS: {
   },
   {
     id: "spec",
-    label: "Spec Check",
-    sublabel: "Artwork",
+    labelKey: "rtSpec",
+    sublabelKey: "rtSpecSub",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 11l3 3L22 4" />
@@ -62,6 +64,7 @@ export default function ResultTabs({
   languagePanel?: React.ReactNode;
   specPanel?: React.ReactNode;
 }) {
+  const { t } = useLang();
   const [active, setActive] = useState<TabId>("extract");
   const tabRefs = useRef<Record<TabId, HTMLButtonElement | null>>({
     extract: null,
@@ -109,8 +112,8 @@ export default function ResultTabs({
                 onClick={() => setActive(tab.id)}
               >
                 {tab.icon}
-                <span>{tab.label}</span>
-                {tab.sublabel && <span className="sublabel">{tab.sublabel}</span>}
+                <span>{t(tab.labelKey)}</span>
+                {tab.sublabelKey && <span className="sublabel">{t(tab.sublabelKey)}</span>}
               </button>
             );
           })}

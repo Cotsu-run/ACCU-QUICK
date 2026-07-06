@@ -1,10 +1,12 @@
 "use client";
 
 import Notifications from "./Notifications";
+import { useLang } from "../lib/LanguageContext";
+import type { TKey } from "../lib/i18n";
 
-const FEATURE_TAGS: { label: string; dot: string; icon: React.ReactNode }[] = [
+const FEATURE_TAGS: { labelKey: TKey; dot: string; icon: React.ReactNode }[] = [
   {
-    label: "Text Extraction",
+    labelKey: "tagText",
     dot: "dot-blue",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -17,7 +19,7 @@ const FEATURE_TAGS: { label: string; dot: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    label: "Language Check",
+    labelKey: "tagLang",
     dot: "dot-violet",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -31,7 +33,7 @@ const FEATURE_TAGS: { label: string; dot: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    label: "Spec Check",
+    labelKey: "tagSpec",
     dot: "dot-orange",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -43,6 +45,7 @@ const FEATURE_TAGS: { label: string; dot: string; icon: React.ReactNode }[] = [
 ];
 
 export default function Hero() {
+  const { t } = useLang();
   return (
     <div className="hero">
       <div className="hero-breadcrumb">
@@ -52,16 +55,16 @@ export default function Hero() {
           <line x1="16" y1="13" x2="8" y2="13" />
           <line x1="16" y1="17" x2="8" y2="17" />
         </svg>
-        <span>Document Inspect</span>
+        <span>{t("bcLeft")}</span>
         <Notifications />
       </div>
       <h2>
-        <span>Document Inspect</span>
+        <span>{t("docReview")}</span>
       </h2>
       <div className="feature-tags">
         {FEATURE_TAGS.map((tag) => (
-          <span className="feature-tag" key={tag.label}>
-            <span className={`dot ${tag.dot}`}>{tag.icon}</span> <span>{tag.label}</span>
+          <span className="feature-tag" key={tag.labelKey}>
+            <span className={`dot ${tag.dot}`}>{tag.icon}</span> <span>{t(tag.labelKey)}</span>
           </span>
         ))}
       </div>

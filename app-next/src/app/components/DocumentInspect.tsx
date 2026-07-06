@@ -10,6 +10,7 @@ import SpecPanel from "./SpecPanel";
 import ImagePreview from "./ImagePreview";
 import { extractText, extractPdfArt } from "../lib/ocr";
 import { TEXT_A, TEXT_B } from "../lib/mockData";
+import { useLang } from "../lib/LanguageContext";
 
 interface ScanResult {
   textA: string;
@@ -37,6 +38,7 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 export default function DocumentInspect() {
+  const { t } = useLang();
   const [scanStatus, setScanStatus] = useState<ScanStatus>("idle");
   const [progressLabel, setProgressLabel] = useState("");
   const [pct, setPct] = useState(0);
@@ -63,13 +65,13 @@ export default function DocumentInspect() {
     setPct(0);
     setDismissed(new Set());
 
-    setProgressLabel("Extracting source text...");
+    setProgressLabel(t("stExtractSrc"));
     const textA = await extractText(files.doc, (p) => {
       if (runToken.current === token) setPct(Math.round(p * 45));
     });
     if (runToken.current !== token) return; // cancelled
 
-    setProgressLabel("Extracting comparison text...");
+    setProgressLabel(t("stExtractCmp"));
     // For a PDF comparison, load it once for BOTH text and every page image.
     // For images, OCR the text and use the file itself as the single preview page.
     let textB = "";
@@ -85,7 +87,7 @@ export default function DocumentInspect() {
     }
     if (runToken.current !== token) return;
 
-    setProgressLabel("Comparing document content...");
+    setProgressLabel(t("stComparing"));
     setPct(100);
 
     // If a slot had no file / unsupported format, fall back to sample text so the
@@ -110,8 +112,8 @@ export default function DocumentInspect() {
             </svg>
           </div>
           <div>
-            <h3>Upload Documents</h3>
-            <p>Choose your file for processing</p>
+            <h3>{t("uploadTitle")}</h3>
+            <p>{t("uploadDesc")}</p>
           </div>
         </div>
       </div>

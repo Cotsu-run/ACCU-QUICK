@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { charDiff, computeLineDiff, type DiffLine, type LineType } from "../lib/diff";
 import { TEXT_A, TEXT_B } from "../lib/mockData";
+import { useLang } from "../lib/LanguageContext";
+import type { TKey } from "../lib/i18n";
 
 const IcCheck = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -52,11 +54,11 @@ const IcMinus = (
 
 type Filter = "all" | "modified" | "added" | "removed";
 
-const STAT_CARDS: { key: LineType; label: string; co: string; icon: React.ReactNode }[] = [
-  { key: "modified", label: "Modified", co: "yellow", icon: IcLines },
-  { key: "added", label: "Added", co: "green", icon: IcPlus },
-  { key: "removed", label: "Missing", co: "red", icon: IcMinus },
-  { key: "unchanged", label: "Unchanged", co: "muted", icon: IcCheck },
+const STAT_CARDS: { key: LineType; labelKey: TKey; co: string; icon: React.ReactNode }[] = [
+  { key: "modified", labelKey: "colModified", co: "yellow", icon: IcLines },
+  { key: "added", labelKey: "colAdded", co: "green", icon: IcPlus },
+  { key: "removed", labelKey: "colMissing", co: "red", icon: IcMinus },
+  { key: "unchanged", labelKey: "colUnchanged", co: "muted", icon: IcCheck },
 ];
 
 const SYMBOL: Record<LineType, string> = { added: "+", removed: "−", modified: "≠", unchanged: "=" };
@@ -102,6 +104,7 @@ function DiffRow({ line }: { line: DiffLine }) {
 }
 
 function CollapsePanel({ label, text, color }: { label: string; text: string; color: string }) {
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   const copy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -115,7 +118,7 @@ function CollapsePanel({ label, text, color }: { label: string; text: string; co
           <span
             role="button"
             tabIndex={0}
-            aria-label="Copy"
+            aria-label={t("copy")}
             onClick={copy}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") { e.preventDefault(); copy(e as unknown as React.MouseEvent); }
@@ -143,6 +146,13 @@ export default function ExtractPanel({
   textB?: string;
   dismissed?: Set<number>;
 }) {
+  const { t } = useLang();
+  const filterKeys: Record<Filter, TKey> = {
+    all: "filterAll",
+    modified: "filterModified",
+    added: "filterAdded",
+    removed: "filterMissing",
+  };
   const [filter, setFilter] = useState<Filter>("all");
   const diff = useMemo(() => {
     const base = computeLineDiff(textA, textB);
@@ -171,19 +181,19 @@ export default function ExtractPanel({
               <span style={{ color: s.co === "muted" ? "var(--fg-faint)" : `var(--${s.co})` }}>{s.icon}</span>
             </div>
             <div className={`stat-value text-${s.co}`}>{counts[s.key]}</div>
-            <div className="stat-label">{s.label}</div>
+            <div className="stat-label">{t(s.labelKey)}</div>
           </div>
         ))}
       </div>
 
       <div id="raw-panels">
-        <CollapsePanel label="Document — Extracted Text" text={textA} color="var(--blue)" />
-        <CollapsePanel label="Image/PDF — Extracted Text" text={textB} color="var(--purple)" />
+        <CollapsePanel label={t("extDocLabel")} text={textA} color="var(--blue)" />
+        <CollapsePanel label={t("extImgLabel")} text={textB} color="var(--purple)" />
       </div>
 
       <div className="diff-container">
         <div className="diff-header">
-          <h3>File Comparison</h3>
+          <h3>{t("fileComparison")}</h3>
           <div className="filter-btns">
             {(["all", "modified", "added", "removed"] as Filter[]).map((f) => (
               <button
@@ -192,7 +202,7 @@ export default function ExtractPanel({
                 aria-pressed={filter === f}
                 onClick={() => setFilter(f)}
               >
-                {f === "removed" ? "missing" : f}
+                {t(filterKeys[f])}
               </button>
             ))}
           </div>
@@ -201,10 +211,10 @@ export default function ExtractPanel({
           <table className="diff-table">
             <thead>
               <tr>
-                <th scope="col">#</th>
-                <th scope="col">Document</th>
-                <th scope="col">Comparison File</th>
-                <th scope="col">Status</th>
+                <th scope="col">{t("colHash")}</th>
+                <th scope="col">{t("colDocument")}</th>
+                <th scope="col">{t("colCompareFile")}</th>
+                <th scope="col">{t("colStatus")}</th>
               </tr>
             </thead>
             <tbody>
@@ -219,12 +229,12 @@ export default function ExtractPanel({
       <div className="alert alert-blue">
         {IcAlertC}
         <div>
-          <div className="alert-title">Comparison Summary</div>
+          <div className="alert-title">{t("summaryTitle")}</div>
           <div className="alert-body">
-            Found <strong style={{ color: "var(--yellow)" }}>{counts.modified} modified</strong>,{" "}
-            <strong style={{ color: "var(--green)" }}>{counts.added} added</strong>,{" "}
-            <strong style={{ color: "var(--red)" }}>{counts.removed} missing lines out of</strong>{" "}
-            {diff.length} total. Similarity: <strong>{sim}%</strong>
+            {t("summaryFound")} <strong style={{ color: "var(--yellow)" }}>{counts.modified} {t("summaryModLines")}</strong>,{" "}
+            <strong style={{ color: "var(--green)" }}>{counts.added} {t("summaryAddLines")}</strong>,{" "}
+            <strong style={{ color: "var(--red)" }}>{counts.removed} {t("summaryMissLines")}</strong>{" "}
+            {diff.length} {t("summaryTotal")} <strong>{sim}%</strong>
           </div>
         </div>
       </div>

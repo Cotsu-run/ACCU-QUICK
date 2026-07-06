@@ -1,26 +1,28 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLang } from "../lib/LanguageContext";
+import type { TKey } from "../lib/i18n";
 
 type Slot = "doc" | "art";
 
 const ZONES: {
   slot: Slot;
-  label: string;
+  labelKey: TKey;
   accept: string;
-  formats: string;
+  formatsKey: TKey;
 }[] = [
   {
-    slot: "doc",
-    label: "Source File",
-    accept: ".pdf,.xlsx,.xls,.csv,.docx",
-    formats: "PDF, XLSX, XLS, CSV, DOCX",
+    slot: "art",
+    labelKey: "comparisonFile",
+    accept: ".pdf,.png,.jpg,.jpeg,.tiff,.ai,.eps",
+    formatsKey: "formatsArt",
   },
   {
-    slot: "art",
-    label: "Comparison File",
-    accept: ".pdf,.png,.jpg,.jpeg,.tiff,.ai,.eps",
-    formats: "PDF, JPEG, PNG, TIFF, AI, EPS  ·  Max 100MB",
+    slot: "doc",
+    labelKey: "sourceFile",
+    accept: ".pdf,.xlsx,.xls,.csv,.docx",
+    formatsKey: "formatsDoc",
   },
 ];
 
@@ -126,6 +128,7 @@ function FilePreview({
   onRemove: () => void;
   onReplace: () => void;
 }) {
+  const { t } = useLang();
   const { kind, kindLabel, icon } = classify(file);
   const [status, setStatus] = useState<"pending" | "ready" | "error">("pending");
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
@@ -173,9 +176,9 @@ function FilePreview({
           <div className="file-name-row">
             <span className="file-name" title={file.name}>{file.name}</span>
             <span className={`file-status ${status}`} role="status" aria-live="polite">
-              {status === "pending" && <><span className="spin" /> Parsing</>}
-              {status === "ready" && <>{IcCheck} Ready</>}
-              {status === "error" && <>Error</>}
+              {status === "pending" && <><span className="spin" /> {t("parsing")}</>}
+              {status === "ready" && <>{IcCheck} {t("ready")}</>}
+              {status === "error" && <>{t("parseError")}</>}
             </span>
           </div>
           <div className="file-meta">
@@ -196,8 +199,8 @@ function FilePreview({
             className="file-remove"
             type="button"
             onClick={(e) => { e.stopPropagation(); onRemove(); }}
-            title="Remove"
-            aria-label="Remove"
+            title={t("remove")}
+            aria-label={t("remove")}
           >
             {IcX}
           </button>
@@ -205,9 +208,9 @@ function FilePreview({
             className="file-replace"
             type="button"
             onClick={(e) => { e.stopPropagation(); onReplace(); }}
-            title="Replace"
+            title={t("replace")}
           >
-            {IcRefresh}<span>Replace</span>
+            {IcRefresh}<span>{t("replace")}</span>
           </button>
         </div>
       </div>
@@ -229,6 +232,7 @@ export default function UploadZone({
   onReset: () => void;
   onFilesChange?: () => void;
 }) {
+  const { t } = useLang();
   const [files, setFiles] = useState<Record<Slot, File | null>>({ doc: null, art: null });
   const inputRefs = { doc: useRef<HTMLInputElement>(null), art: useRef<HTMLInputElement>(null) };
 
@@ -261,7 +265,7 @@ export default function UploadZone({
             const file = files[zone.slot];
             return (
               <div key={zone.slot}>
-                <div className="upload-label">{zone.label}</div>
+                <div className="upload-label">{t(zone.labelKey)}</div>
                 <div
                   className={`upload-zone${file ? " has-file" : ""}`}
                   onClick={() => !file && openPicker(zone.slot)}
@@ -275,7 +279,7 @@ export default function UploadZone({
                     ref={inputRefs[zone.slot]}
                     type="file"
                     accept={zone.accept}
-                    aria-label={zone.label}
+                    aria-label={t(zone.labelKey)}
                     onChange={(e) => {
                       if (e.target.files?.[0]) setFile(zone.slot, e.target.files[0]);
                     }}
@@ -283,8 +287,8 @@ export default function UploadZone({
                   {!file ? (
                     <div>
                       {IcUpload}
-                      <p className="hint">Drop or <span className="accent">browse</span></p>
-                      <p className="sub">{zone.formats}</p>
+                      <p className="hint">{t("dropOr")} <span className="accent">{t("browse")}</span></p>
+                      <p className="sub">{t(zone.formatsKey)}</p>
                     </div>
                   ) : (
                     <FilePreview
@@ -306,7 +310,7 @@ export default function UploadZone({
             <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
             <polyline points="3 3 3 8 8 8" />
           </svg>
-          <span>Reset</span>
+          <span>{t("reset")}</span>
         </button>
         <button
           className={`btn-verify${scanStatus === "done" ? " is-scanned" : ""}`}
@@ -315,11 +319,11 @@ export default function UploadZone({
           onClick={() => onVerify(files)}
         >
           {scanStatus === "scanning" ? (
-            <><span className="spinner" /><span>Analyzing…</span></>
+            <><span className="spinner" /><span>{t("analyzing")}</span></>
           ) : scanStatus === "done" ? (
-            <>{IcCheck}<span>Scanned</span></>
+            <>{IcCheck}<span>{t("scanned")}</span></>
           ) : (
-            "Verify"
+            t("verify")
           )}
         </button>
       </div>

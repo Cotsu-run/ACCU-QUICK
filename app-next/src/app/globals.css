@@ -210,6 +210,7 @@ body { padding-left: 256px; transition: padding 0.25s ease; }
 .mi-origin-doc { background: rgba(64,122,245,0.12); color: var(--blue); }
 .mi-origin-cmp { background: rgba(124,58,237,0.12); color: var(--violet); }
 .mi-val { flex: 1; min-width: 0; }
+.mi-absent { color: var(--fg-faint); font-style: italic; }
 .mismatch-item .mi-delete {
   flex-shrink: 0; width: 24px; height: 24px; border-radius: 6px;
   border: none; background: transparent; color: var(--fg-faint);
