@@ -13,16 +13,16 @@ const ZONES: {
   formatsKey: TKey;
 }[] = [
   {
-    slot: "art",
-    labelKey: "comparisonFile",
-    accept: ".pdf,.png,.jpg,.jpeg,.tiff,.ai,.eps",
-    formatsKey: "formatsArt",
-  },
-  {
     slot: "doc",
     labelKey: "sourceFile",
     accept: ".pdf,.xlsx,.xls,.csv,.docx",
     formatsKey: "formatsDoc",
+  },
+  {
+    slot: "art",
+    labelKey: "comparisonFile",
+    accept: ".pdf,.png,.jpg,.jpeg,.tiff,.ai,.eps",
+    formatsKey: "formatsArt",
   },
 ];
 
@@ -175,11 +175,12 @@ function FilePreview({
         <div className="file-details">
           <div className="file-name-row">
             <span className="file-name" title={file.name}>{file.name}</span>
-            <span className={`file-status ${status}`} role="status" aria-live="polite">
-              {status === "pending" && <><span className="spin" /> {t("parsing")}</>}
-              {status === "ready" && <>{IcCheck} {t("ready")}</>}
-              {status === "error" && <>{t("parseError")}</>}
-            </span>
+            {status !== "ready" && (
+              <span className={`file-status ${status}`} role="status" aria-live="polite">
+                {status === "pending" && <><span className="spin" /> {t("parsing")}</>}
+                {status === "error" && <>{t("parseError")}</>}
+              </span>
+            )}
           </div>
           <div className="file-meta">
             <span><strong>{kindLabel}</strong></span>
@@ -223,11 +224,13 @@ export type SlotFiles = Record<Slot, File | null>;
 
 export default function UploadZone({
   scanStatus,
+  scanMs,
   onVerify,
   onReset,
   onFilesChange,
 }: {
   scanStatus: ScanStatus;
+  scanMs?: number | null;
   onVerify: (files: SlotFiles) => void;
   onReset: () => void;
   onFilesChange?: () => void;
@@ -321,7 +324,7 @@ export default function UploadZone({
           {scanStatus === "scanning" ? (
             <><span className="spinner" /><span>{t("analyzing")}</span></>
           ) : scanStatus === "done" ? (
-            <>{IcCheck}<span>{t("scanned")}</span></>
+            <>{IcCheck}<span>{t("scanned")}{scanMs != null ? ` · ${(scanMs / 1000).toFixed(1)}s` : ""}</span></>
           ) : (
             t("verify")
           )}

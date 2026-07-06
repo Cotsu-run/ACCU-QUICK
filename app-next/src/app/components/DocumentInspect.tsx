@@ -43,6 +43,7 @@ export default function DocumentInspect() {
   const [progressLabel, setProgressLabel] = useState("");
   const [pct, setPct] = useState(0);
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [scanMs, setScanMs] = useState<number | null>(null);
   // Lines dismissed from the mismatch panel — shared so a delete in the image
   // preview also marks that line "unchanged" in the Text Extraction diff.
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
@@ -56,11 +57,13 @@ export default function DocumentInspect() {
     setScanStatus("idle");
     setPct(0);
     setDismissed(new Set());
+    setScanMs(null);
   };
 
   // Real client-side extraction (Path A): OCR images, read text files directly.
   const runScan = async (files: SlotFiles) => {
     const token = ++runToken.current;
+    const startedAt = Date.now();
     setScanStatus("scanning");
     setPct(0);
     setDismissed(new Set());
@@ -99,6 +102,7 @@ export default function DocumentInspect() {
       artName: files.art?.name ?? "Comparison File",
     });
     if (runToken.current !== token) return;
+    setScanMs(Date.now() - startedAt);
     setScanStatus("done");
   };
 
@@ -121,6 +125,7 @@ export default function DocumentInspect() {
       <div className="card-body">
         <UploadZone
           scanStatus={scanStatus}
+          scanMs={scanMs}
           onVerify={runScan}
           onReset={invalidate}
           onFilesChange={invalidate}

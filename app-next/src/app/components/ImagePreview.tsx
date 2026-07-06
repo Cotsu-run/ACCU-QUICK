@@ -58,6 +58,15 @@ function Absent() {
 // Every change shows BOTH sides: the original version (Document) and how the
 // comparison file renders it (Comparison). An absent side is marked explicitly.
 function MismatchText({ type, lineA, lineB }: { type: LineType; lineA?: string; lineB?: string }) {
+  if (type === "unchanged") {
+    // Matching line — both sides identical, no highlighting.
+    return (
+      <>
+        <DocSide>{lineA}</DocSide>
+        <CmpSide>{lineB}</CmpSide>
+      </>
+    );
+  }
   if (type === "modified") {
     const cd = charDiff(lineA || "", lineB || "");
     return (
@@ -104,12 +113,16 @@ export default function ImagePreview({
   onDismiss: (n: number) => void;
 }) {
   const { t } = useLang();
-  const { mismatches, maxLines } = useMemo(() => {
+  const { mismatches, allItems, maxLines } = useMemo(() => {
     const diff = computeLineDiff(textA, textB);
-    const ms = diff
-      .map((d, idx) => ({ ...d, idx }))
-      .filter((d) => d.type !== "unchanged" && !dismissed.has(d.n));
-    return { mismatches: ms, maxLines: Math.max(diff.length, 1) };
+    // A dismissed line is treated as matching (unchanged).
+    const items = diff.map((d, idx) => ({
+      ...d,
+      idx,
+      type: dismissed.has(d.n) ? ("unchanged" as LineType) : d.type,
+    }));
+    const ms = items.filter((d) => d.type !== "unchanged");
+    return { mismatches: ms, allItems: items, maxLines: Math.max(diff.length, 1) };
   }, [textA, textB, dismissed]);
 
   const counts = { modified: 0, added: 0, removed: 0 } as Record<Exclude<LineType, "unchanged">, number>;
@@ -188,25 +201,31 @@ export default function ImagePreview({
             </div>
           </div>
           <div className="mismatch-list">
-            {mismatches.length === 0 ? (
+            {allItems.length === 0 ? (
               <div className="mismatch-empty">{t("noMismatches")}</div>
             ) : (
-              mismatches.map((m) => (
+              allItems.map((m) => {
+                const pageNo = Math.floor(m.idx / linesPerPage) + 1;
+                return (
                 <div className="mismatch-item" key={m.idx}>
                   <span className={`mi-line mi-line-${m.type}`}>{m.n}</span>
                   <span className="mi-text">
+                    <div className="mi-loc">{t("page")} {pageNo} · {t("line")} {m.n}</div>
                     <MismatchText type={m.type} lineA={m.lineA} lineB={m.lineB} />
                   </span>
-                  <button
-                    className="mi-delete"
-                    type="button"
-                    aria-label={`Dismiss mismatch on line ${m.n}`}
-                    onClick={() => onDismiss(m.n)}
-                  >
-                    {IcTrash}
-                  </button>
+                  {m.type !== "unchanged" && (
+                    <button
+                      className="mi-delete"
+                      type="button"
+                      aria-label={`Dismiss mismatch on line ${m.n}`}
+                      onClick={() => onDismiss(m.n)}
+                    >
+                      {IcTrash}
+                    </button>
+                  )}
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

@@ -19,9 +19,9 @@ export const dict = {
     langEnglish: "English",
     // hero
     bcLeft: "Document Inspect",
-    tagText: "Text Extraction",
-    tagLang: "Language Check",
-    tagSpec: "Spec Check",
+    tagText: "Check Text",
+    tagLang: "Translate",
+    tagSpec: "Check Spec Artwork",
     // notifications
     notifTitle: "Notifications",
     notifMarkAll: "Mark all read",
@@ -118,6 +118,7 @@ export const dict = {
     notPresent: "— not present —",
     page: "Page",
     pages: "pages",
+    line: "Line",
   },
   th: {
     tagline: "แพลตฟอร์มตรวจเทียบอักษรอัจฉริยะ",
@@ -133,9 +134,9 @@ export const dict = {
     langThai: "ไทย",
     langEnglish: "อังกฤษ",
     bcLeft: "ตรวจสอบเอกสาร",
-    tagText: "สกัดข้อความ",
-    tagLang: "ตรวจสอบภาษา",
-    tagSpec: "ตรวจสเปก",
+    tagText: "เช็กข้อความ",
+    tagLang: "แปลภาษา",
+    tagSpec: "ตรวจสเปกอาร์ตเวิร์ค",
     notifTitle: "การแจ้งเตือน",
     notifMarkAll: "ทำเครื่องหมายว่าอ่านแล้วทั้งหมด",
     notifEmpty: "อ่านครบทุกรายการแล้ว",
@@ -224,6 +225,7 @@ export const dict = {
     notPresent: "— ไม่มี —",
     page: "หน้า",
     pages: "หน้า",
+    line: "บรรทัด",
   },
 } as const;
 
