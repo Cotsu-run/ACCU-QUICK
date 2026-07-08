@@ -318,13 +318,13 @@ export default function UploadZone({
         <button
           className={`btn-verify${scanStatus === "done" ? " is-scanned" : ""}`}
           type="button"
-          disabled={!files.doc || scanStatus !== "idle"}
-          onClick={() => onVerify(files)}
+          disabled={scanStatus === "scanning" || (scanStatus === "idle" && !files.doc)}
+          onClick={() => { if (scanStatus === "idle") onVerify(files); }}
         >
           {scanStatus === "scanning" ? (
             <><span className="spinner" /><span>{t("analyzing")}</span></>
           ) : scanStatus === "done" ? (
-            <>{IcCheck}<span>{t("scanned")}{scanMs != null ? ` · ${(scanMs / 1000).toFixed(1)}s` : ""}</span></>
+            <>{IcCheck}<span>{t("scanned")}</span></>
           ) : (
             t("verify")
           )}

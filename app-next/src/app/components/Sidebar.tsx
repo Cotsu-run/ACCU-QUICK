@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useLang } from "../lib/LanguageContext";
 import type { TKey } from "../lib/i18n";
 
-type PageId = "docreview" | "dashboard" | "usage" | "settings";
+export type PageId = "docreview" | "dashboard" | "usage" | "settings";
 
 const NAV_ITEMS: {
   id: PageId;
@@ -38,9 +38,8 @@ const NAV_ITEMS: {
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ activePage, onNavigate }: { activePage: PageId; onNavigate: (id: PageId) => void }) {
   const { lang, setLang, t } = useLang();
-  const [activePage, setActivePage] = useState<PageId>("docreview");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -139,7 +138,7 @@ export default function Sidebar() {
                 type="button"
                 className={`nav-item${isActive ? " active" : ""}`}
                 aria-current={isActive ? "page" : undefined}
-                onClick={() => { setActivePage(item.id); setMobileOpen(false); }}
+                onClick={() => { onNavigate(item.id); setMobileOpen(false); }}
               >
                 <span className="nav-icon-wrap">{item.icon}</span>
                 <span>{t(item.labelKey)}</span>
@@ -151,10 +150,10 @@ export default function Sidebar() {
 
         <div className="sidebar-bottom">
           <button className="user-pill" type="button" aria-label="User menu">
-            <div className="user-avatar">AC</div>
+            <div className="user-avatar">LY</div>
             <div className="user-info">
-              <div className="name">Alex Chen</div>
-              <div className="email">alex@accuquick.com</div>
+              <div className="name">Lerkchai Yangsauptrakoo</div>
+              <div className="email">Lerkchai.y@mama.co.th</div>
             </div>
             <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />

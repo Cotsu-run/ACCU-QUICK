@@ -45,6 +45,158 @@ async function ocrImage(source: File | HTMLCanvasElement, onProgress: (p: number
   return data.text.trim();
 }
 
+// A detected word's location within its page image, as fractions (0..1).
+export interface WordBox {
+  text: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+// A detected line's location + its words, as fractions (0..1).
+export interface LineBox {
+  n: number; // 1-based line number in the comparison text
+  page: number; // 0-based page index
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  words: WordBox[];
+}
+
+type Bbox = { x0: number; y0: number; x1: number; y1: number };
+type OcrWord = { text: string; bbox: Bbox };
+type OcrLine = { text: string; bbox: Bbox; words: OcrWord[] };
+
+// OCR that also returns per-line bounding boxes (via Tesseract's block output).
+async function ocrLines(
+  source: File | HTMLCanvasElement,
+  onProgress: (p: number) => void
+): Promise<{ text: string; lines: OcrLine[] }> {
+  const mod = await import("tesseract.js");
+  const createWorker = mod.createWorker ?? mod.default.createWorker;
+  const worker = await createWorker(OCR_LANGS, 1, {
+    ...TESS_PATHS,
+    logger: (m: { status: string; progress: number }) => {
+      if (m.status === "recognizing text") onProgress(m.progress);
+    },
+  });
+  const { data } = await worker.recognize(source, {}, { blocks: true });
+  await worker.terminate();
+  const lines: OcrLine[] = [];
+  for (const b of data.blocks ?? [])
+    for (const p of b.paragraphs ?? [])
+      for (const l of p.lines ?? [])
+        lines.push({
+          text: l.text.replace(/\s+/g, " ").trim(),
+          bbox: l.bbox,
+          words: (l.words ?? [])
+            .map((w) => ({ text: w.text.trim(), bbox: w.bbox }))
+            .filter((w) => w.text.length > 0),
+        });
+  const text = lines.map((l) => l.text).filter(Boolean).join("\n").trim() || data.text.trim();
+  return { text, lines };
+}
+
+function toFrac(b: Bbox, W: number, H: number): { x: number; y: number; w: number; h: number } {
+  return { x: b.x0 / W, y: b.y0 / H, w: (b.x1 - b.x0) / W, h: (b.y1 - b.y0) / H };
+}
+
+function imageDims(file: File): Promise<{ w: number; h: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      resolve({ w: img.naturalWidth, h: img.naturalHeight });
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+// Extract the comparison file's text + preview image(s) + precise per-line boxes.
+// Boxes come from OCR of the exact rendered image, so they align with the preview.
+export async function extractComparison(
+  file: File,
+  onProgress: (p: number) => void
+): Promise<{ text: string; pageUrls: string[]; boxes: LineBox[] }> {
+  if (isImageFile(file)) {
+    const dataUrl = await fileToDataUrl(file);
+    const dims = await imageDims(file);
+    const { text, lines } = await ocrLines(file, onProgress);
+    const boxes: LineBox[] = lines.map((l, i) => ({
+      n: i + 1,
+      page: 0,
+      ...toFrac(l.bbox, dims.w, dims.h),
+      words: l.words.map((w) => ({ text: w.text, ...toFrac(w.bbox, dims.w, dims.h) })),
+    }));
+    onProgress(1);
+    return { text, pageUrls: [dataUrl], boxes };
+  }
+
+  if (isPdfFile(file)) {
+    const pdfjs = await import("pdfjs-dist");
+    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+    const buf = await file.arrayBuffer();
+    const loadingTask = pdfjs.getDocument({ data: buf, standardFontDataUrl: "/standard_fonts/" });
+    const pdf = await loadingTask.promise;
+    const n = pdf.numPages;
+    const pageUrls: string[] = [];
+    const pageTexts: string[] = [];
+    const boxes: LineBox[] = [];
+    let lineNo = 0;
+    try {
+      for (let i = 1; i <= n; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        const ctx = canvas.getContext("2d")!;
+        await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+        pageUrls.push(canvas.toDataURL("image/png"));
+        const { text, lines } = await ocrLines(canvas, (p) => onProgress((i - 1 + p) / n));
+        pageTexts.push(text);
+        lines.forEach((l) => {
+          lineNo++;
+          boxes.push({
+            n: lineNo,
+            page: i - 1,
+            ...toFrac(l.bbox, canvas.width, canvas.height),
+            words: l.words.map((w) => ({ text: w.text, ...toFrac(w.bbox, canvas.width, canvas.height) })),
+          });
+        });
+      }
+    } finally {
+      try {
+        await loadingTask.destroy();
+      } catch {
+        /* ignore */
+      }
+    }
+    onProgress(1);
+    return { text: pageTexts.join("\n").trim(), pageUrls, boxes };
+  }
+
+  // Text file or unsupported: text only, no preview boxes.
+  const text = isTextFile(file)
+    ? await file.text()
+    : `[Client-side extraction not yet supported for ${file.name}.]`;
+  onProgress(1);
+  return { text, pageUrls: [], boxes: [] };
+}
+
 function pdfTextFromContent(items: { str?: string; hasEOL?: boolean }[]): string {
   let s = "";
   for (const it of items) {

@@ -21,38 +21,45 @@ export const NOTIFS: Notif[] = [
   { id: 5, kind: "green", ico: "checkC", title: "Report exported", desc: "Compliance report for batch #1042 is ready to download.", time: "Yesterday", unread: false },
 ];
 
-export type SpecStatus = "pass" | "fail" | "warning";
-export type SpecCat = "Dimensions" | "Colors" | "Typography" | "Images" | "Barcodes";
-export interface SpecRow {
+// ── Artwork standard: minimum text heights (mm) per element, by region. ──
+// Source: MAMA inspection form ST.LIM2629.00 REV 1.
+export type StdStatus = "pass" | "fail" | "pending";
+export type StdPart = "1" | "2";
+
+export interface StandardRow {
   id: string;
-  cat: SpecCat;
-  spec: string;
-  expected: string;
-  actual: string;
-  status: SpecStatus;
-  details?: string;
+  part: StdPart; // Part 1 = BD/PI, Part 2 = R&D
+  labelEn: string;
+  labelTh: string;
+  thai: string; // min height e.g. "≥ 2.0" (mm), or "—" if not specified
+  eu: string;
+  usa: string;
+  note?: string;
 }
 
-// Placeholder spec-compliance findings — replaced by real analysis in step 5.
-export const SPECS: SpecRow[] = [
-  { id: "s1", cat: "Dimensions", spec: "Width", expected: "210mm", actual: "210mm", status: "pass" },
-  { id: "s2", cat: "Dimensions", spec: "Height", expected: "297mm", actual: "295mm", status: "fail", details: "2mm deviation — outside ±0.5mm tolerance" },
-  { id: "s3", cat: "Dimensions", spec: "Bleed Area", expected: "3mm", actual: "3mm", status: "pass" },
-  { id: "s4", cat: "Dimensions", spec: "Safe Zone", expected: "5mm", actual: "4mm", status: "warning", details: "Safe zone 1mm below spec" },
-  { id: "s5", cat: "Colors", spec: "Primary Brand Color", expected: "#1A3C6E", actual: "#1A3C6E", status: "pass" },
-  { id: "s6", cat: "Colors", spec: "Secondary Color", expected: "#FF5722", actual: "#FF6833", status: "fail", details: "Color deviation ΔE=4.2, threshold ΔE=2.0" },
-  { id: "s7", cat: "Colors", spec: "Background Color", expected: "#FFFFFF", actual: "#FFFFFF", status: "pass" },
-  { id: "s8", cat: "Colors", spec: "CMYK Profile", expected: "ISO Coated v2", actual: "ISO Coated v2", status: "pass" },
-  { id: "s9", cat: "Typography", spec: "Headline Font", expected: "Helvetica Neue Bold", actual: "Helvetica Neue Bold", status: "pass" },
-  { id: "s10", cat: "Typography", spec: "Body Font Size", expected: "10pt", actual: "9.5pt", status: "warning", details: "Slightly below spec" },
-  { id: "s11", cat: "Typography", spec: "Min Font Size", expected: "6pt", actual: "5pt", status: "fail", details: "Below minimum size" },
-  { id: "s12", cat: "Typography", spec: "Line Spacing", expected: "120%", actual: "120%", status: "pass" },
-  { id: "s13", cat: "Images", spec: "Resolution (DPI)", expected: "300 DPI", actual: "300 DPI", status: "pass" },
-  { id: "s14", cat: "Images", spec: "Image Format", expected: "CMYK TIFF", actual: "RGB JPEG", status: "fail", details: "Must be CMYK TIFF" },
-  { id: "s15", cat: "Images", spec: "Color Space", expected: "CMYK", actual: "RGB", status: "fail", details: "Must use CMYK" },
-  { id: "s16", cat: "Barcodes", spec: "Barcode Type", expected: "EAN-13", actual: "EAN-13", status: "pass" },
-  { id: "s17", cat: "Barcodes", spec: "Barcode Size", expected: "≥25mm", actual: "27mm", status: "pass" },
-  { id: "s18", cat: "Barcodes", spec: "Quiet Zone", expected: "3mm", actual: "2mm", status: "warning", details: "Below minimum" },
+export const STANDARD_REF = "ST.LIM2629.00 REV 1";
+
+export const STANDARDS: StandardRow[] = [
+  // Part 1 — BD / PI
+  { id: "n1", part: "1", labelEn: "Product name", labelTh: "ชื่อสินค้า", thai: "≥ 2.0", eu: "≥ 1.2", usa: "≥ 1.6" },
+  { id: "n2", part: "1", labelEn: "Manufacturer name / address / complaint tel", labelTh: "ชื่อ ที่อยู่ผู้ผลิต / เบอร์ร้องเรียน", thai: "≥ 2.0", eu: "≥ 1.2", usa: "≥ 1.6" },
+  { id: "n3", part: "1", labelEn: "Distributor name / address", labelTh: "ชื่อ ที่อยู่ผู้จัดจำหน่าย", thai: "≥ 2.0", eu: "—", usa: "—" },
+  { id: "n4", part: "1", labelEn: "Country of Origin (export)", labelTh: "แหล่งกำเนิดสินค้า (ส่งออก)", thai: "—", eu: "≥ 1.2", usa: "≥ 1.6" },
+  { id: "n5", part: "1", labelEn: "Barcode", labelTh: "บาร์โค้ด", thai: "—", eu: "—", usa: "—" },
+  { id: "n6", part: "1", labelEn: "Product code / special text", labelTh: "รหัสสินค้า / ข้อความพิเศษ", thai: "—", eu: "—", usa: "—" },
+  // Part 2 — R&D
+  { id: "n7", part: "2", labelEn: "Registration number (FDA)", labelTh: "เลขสารบบอาหาร", thai: "≥ 2.0", eu: "—", usa: "—" },
+  { id: "n8", part: "2", labelEn: "Ingredients", labelTh: "ส่วนประกอบที่สำคัญ", thai: "≥ 1.5", eu: "≥ 1.2", usa: "≥ 1.6" },
+  { id: "n9", part: "2", labelEn: "Allergen information", labelTh: "ข้อมูลสำหรับผู้แพ้อาหาร", thai: "≥ 1.5", eu: "≥ 1.2", usa: "≥ 1.6" },
+  { id: "n10", part: "2", labelEn: "Direction (cooking)", labelTh: "วิธีการปรุง", thai: "—", eu: "≥ 1.2", usa: "≥ 1.6" },
+  { id: "n11", part: "2", labelEn: "Nutrition Facts", labelTh: "ข้อมูลโภชนาการ", thai: "≥ 1.0", eu: "≥ 1.2", usa: "≥ 1.6" },
+  { id: "n12", part: "2", labelEn: "GDA", labelTh: "ข้อมูลโภชนาการ (GDA)", thai: "≥ 1.0", eu: "—", usa: "—" },
+  { id: "n13", part: "2", labelEn: "Net weight — outer sachet", labelTh: "น้ำหนักสุทธิ (ซองนอก)", thai: "≥ 3.0", eu: "≥ 1.2", usa: "≥ 1.6" },
+  { id: "n14", part: "2", labelEn: "Net weight — bundling film", labelTh: "น้ำหนักสุทธิ (ฟิล์มจัดชุด)", thai: "≥ 6.0", eu: "—", usa: "—" },
+  { id: "n15", part: "2", labelEn: "Net weight — cup side", labelTh: "น้ำหนักสุทธิ (ข้างถ้วย)", thai: "≥ 3.0", eu: "—", usa: "—" },
+  { id: "n16", part: "2", labelEn: "Net weight — box (small / large / bundle)", labelTh: "น้ำหนักสุทธิ (กล่อง)", thai: "≥ 6.0", eu: "—", usa: "—" },
+  { id: "n17", part: "2", labelEn: "Production & best-before date", labelTh: "วันที่ผลิต / ควรบริโภคก่อน", thai: "≥ 1.5", eu: "—", usa: "—" },
+  { id: "n18", part: "2", labelEn: "GDA colour (black / dark blue on white)", labelTh: "GDA สีตัวอักษร (ดำ/น้ำเงินเข้ม บนพื้นขาว)", thai: "≥ 1.0", eu: "—", usa: "—", note: "Text & lines must be black or dark blue on white" },
 ];
 
 export const TEXT_A = `PRODUCT SPECIFICATION DOCUMENT

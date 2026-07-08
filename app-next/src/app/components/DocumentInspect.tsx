@@ -8,7 +8,7 @@ import ExtractPanel from "./ExtractPanel";
 import LanguagePanel from "./LanguagePanel";
 import SpecPanel from "./SpecPanel";
 import ImagePreview from "./ImagePreview";
-import { extractText, extractPdfArt } from "../lib/ocr";
+import { extractText, extractComparison, type LineBox } from "../lib/ocr";
 import { TEXT_A, TEXT_B } from "../lib/mockData";
 import { useLang } from "../lib/LanguageContext";
 
@@ -17,24 +17,7 @@ interface ScanResult {
   textB: string;
   artUrls: string[];
   artName: string;
-}
-
-function isImage(file: File): boolean {
-  const t = (file.type || "").toLowerCase();
-  return /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.name) || /^image\//.test(t);
-}
-
-function isPdf(file: File): boolean {
-  return /\.pdf$/i.test(file.name) || (file.type || "").toLowerCase() === "application/pdf";
-}
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
+  boxes: LineBox[];
 }
 
 export default function DocumentInspect() {
@@ -75,18 +58,17 @@ export default function DocumentInspect() {
     if (runToken.current !== token) return; // cancelled
 
     setProgressLabel(t("stExtractCmp"));
-    // For a PDF comparison, load it once for BOTH text and every page image.
-    // For images, OCR the text and use the file itself as the single preview page.
+    // Comparison side: OCR the image / rendered PDF pages so the text AND the
+    // per-line bounding boxes come from the exact preview image.
     let textB = "";
     let artUrls: string[] = [];
+    let boxes: LineBox[] = [];
     const setArtPct = (p: number) => { if (runToken.current === token) setPct(45 + Math.round(p * 45)); };
-    if (files.art && isPdf(files.art)) {
-      const res = await extractPdfArt(files.art, setArtPct);
+    if (files.art) {
+      const res = await extractComparison(files.art, setArtPct);
       textB = res.text;
       artUrls = res.pageUrls;
-    } else {
-      textB = await extractText(files.art, setArtPct);
-      if (files.art && isImage(files.art)) artUrls = [await fileToDataUrl(files.art)];
+      boxes = res.boxes;
     }
     if (runToken.current !== token) return;
 
@@ -100,6 +82,7 @@ export default function DocumentInspect() {
       textB: textB || TEXT_B,
       artUrls,
       artName: files.art?.name ?? "Comparison File",
+      boxes,
     });
     if (runToken.current !== token) return;
     setScanMs(Date.now() - startedAt);
@@ -138,6 +121,7 @@ export default function DocumentInspect() {
             fileName={result.artName}
             textA={result.textA}
             textB={result.textB}
+            boxes={result.boxes}
             dismissed={dismissed}
             onDismiss={dismissLine}
           />
