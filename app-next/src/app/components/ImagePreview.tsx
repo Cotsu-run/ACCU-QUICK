@@ -373,22 +373,13 @@ export default function ImagePreview({
           ctx.lineWidth = Math.max(2, canvas.width / 350);
           ctx.strokeRect(an.x * canvas.width, an.y * canvas.height, an.w * canvas.width, an.h * canvas.height);
         } else {
+          // Comment: red text, no background box.
           const px = an.x * canvas.width;
           const py = an.y * canvas.height;
-          ctx.font = `600 ${fs}px sans-serif`;
-          const padX = fs * 0.5;
-          const padY = fs * 0.35;
-          const tw = ctx.measureText(an.text).width;
-          const bw = tw + padX * 2;
-          const bh = fs + padY * 2;
-          ctx.fillStyle = ANNO_COLOR;
-          ctx.beginPath();
-          const rr = 6;
-          ctx.roundRect(px, py, bw, bh, rr);
-          ctx.fill();
-          ctx.fillStyle = "#fff";
-          ctx.textBaseline = "middle";
-          ctx.fillText(an.text, px + padX, py + bh / 2);
+          ctx.font = `700 ${fs}px sans-serif`;
+          ctx.fillStyle = "#dc2626";
+          ctx.textBaseline = "top";
+          ctx.fillText(an.text, px, py);
         }
       });
       const a = document.createElement("a");
@@ -560,12 +551,13 @@ export default function ImagePreview({
               <div className="mismatch-empty">{t("noMismatches")}</div>
             ) : (
               allItems.map((m) => {
-                const pageNo = Math.floor(m.idx / linesPerPage) + 1;
                 return (
                 <div className="mismatch-item" key={m.idx}>
                   <span className={`mi-line mi-line-${m.type}`}>{m.n}</span>
                   <span className="mi-text">
-                    <div className="mi-loc">{pageCount > 1 && <>{t("page")} {pageNo} · </>}{t("line")} {m.n}</div>
+                    <div className={`mi-type mi-type-${m.type}`}>
+                      {m.type === "modified" ? t("legModified") : m.type === "added" ? t("legAdded") : m.type === "removed" ? t("legMissing") : t("colUnchanged")}
+                    </div>
                     <MismatchText type={m.type} lineA={m.lineA} lineB={m.lineB} />
                   </span>
                   {m.type !== "unchanged" && (

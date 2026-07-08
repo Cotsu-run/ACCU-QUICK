@@ -47,7 +47,7 @@ const IcMinus = (
   </svg>
 );
 
-type Filter = "all" | "modified" | "added" | "removed";
+type Filter = "all" | "modified" | "added" | "removed" | "unchanged";
 
 const STAT_CARDS: { key: LineType; labelKey: TKey; co: string; icon: React.ReactNode }[] = [
   { key: "modified", labelKey: "colModified", co: "yellow", icon: IcLines },
@@ -146,6 +146,7 @@ export default function ExtractPanel({
     modified: "filterModified",
     added: "filterAdded",
     removed: "filterMissing",
+    unchanged: "filterUnchanged",
   };
   const [filter, setFilter] = useState<Filter>("all");
   const diff = useMemo(() => {
@@ -189,7 +190,7 @@ export default function ExtractPanel({
         <div className="diff-header">
           <h3>{t("fileComparison")}</h3>
           <div className="filter-btns">
-            {(["all", "modified", "added", "removed"] as Filter[]).map((f) => (
+            {(["all", "modified", "added", "removed", "unchanged"] as Filter[]).map((f) => (
               <button
                 key={f}
                 className={`filter-btn${filter === f ? " active" : ""}`}
