@@ -6,11 +6,6 @@ import { TEXT_A, TEXT_B } from "../lib/mockData";
 import { useLang } from "../lib/LanguageContext";
 import type { TKey } from "../lib/i18n";
 
-const IcCheck = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
 const IcCopy = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
@@ -58,7 +53,6 @@ const STAT_CARDS: { key: LineType; labelKey: TKey; co: string; icon: React.React
   { key: "modified", labelKey: "colModified", co: "yellow", icon: IcLines },
   { key: "added", labelKey: "colAdded", co: "green", icon: IcPlus },
   { key: "removed", labelKey: "colMissing", co: "red", icon: IcMinus },
-  { key: "unchanged", labelKey: "colUnchanged", co: "muted", icon: IcCheck },
 ];
 
 const SYMBOL: Record<LineType, string> = { added: "+", removed: "−", modified: "≠", unchanged: "=" };
@@ -174,7 +168,7 @@ export default function ExtractPanel({
 
   return (
     <>
-      <div className="stats-grid cols-4">
+      <div className="stats-grid cols-3">
         {STAT_CARDS.map((s) => (
           <div className="stat-card" key={s.key}>
             <div className={`stat-icon bg-${s.co}-light`}>
