@@ -5,11 +5,12 @@ export type Lang = "en" | "th";
 export const dict = {
   en: {
     // sidebar / nav
-    tagline: "Intelligent spec comparison system",
+    tagline: "Document Validation System",
     workspace: "Workspace",
-    docReview: "Document Inspect",
+    docReview: "Scan Documents",
+    docReviewTitle: "Scan Documents",
     dashboard: "Workboard",
-    usage: "Usage History",
+    usage: "History",
     settings: "Settings",
     logout: "Log out",
     usageBadge: "12",
@@ -154,11 +155,12 @@ export const dict = {
     uhInShared: "in Shared with me",
   },
   th: {
-    tagline: "ระบบตรวจเทียบสเป็คอัจฉริยะ",
+    tagline: "ระบบตรวจสอบความถูกต้องของเอกสาร",
     workspace: "พื้นที่ทำงาน",
-    docReview: "ตรวจสอบเอกสาร",
+    docReview: "สแกนเอกสาร",
+    docReviewTitle: "สแกนเอกสาร",
     dashboard: "เวิร์คบอร์ด",
-    usage: "ประวัติการใช้งาน",
+    usage: "ประวัติ",
     settings: "ตั้งค่า",
     logout: "ออกจากระบบ",
     usageBadge: "12",

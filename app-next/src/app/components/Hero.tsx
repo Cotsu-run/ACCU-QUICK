@@ -9,7 +9,7 @@ export default function Hero() {
     <div className="hero">
       <div className="uh-head">
         <div>
-          <h1 className="uh-title">{t("docReview")}</h1>
+          <h1 className="uh-title">{t("docReviewTitle")}</h1>
           <p className="uh-sub">{t("docReviewSub")}</p>
         </div>
         <Notifications />

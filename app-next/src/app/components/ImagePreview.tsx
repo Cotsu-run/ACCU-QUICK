@@ -406,6 +406,38 @@ export default function ImagePreview({
             <span className="pane-dot" style={{ background: "var(--purple)" }} />
             {fileName}
             {pageCount > 1 && <span className="pane-pages">{pageCount} {t("pages")}</span>}
+            <div className="pane-tools" role="toolbar" aria-label="Preview tools">
+              <button type="button" className="aq-float-btn" onClick={zoomOut} disabled={zoom <= ZOOM_MIN} aria-label="Zoom out">
+                {IcZoomOut}
+              </button>
+              <span className="aq-float-pct" aria-live="polite">{Math.round(zoom * 100)}%</span>
+              <button type="button" className="aq-float-btn" onClick={zoomIn} disabled={zoom >= ZOOM_MAX} aria-label="Zoom in">
+                {IcZoomIn}
+              </button>
+              <span className="aq-float-sep" />
+              <button type="button" className="aq-float-btn" onClick={resetZoom} disabled={zoom === 1} aria-label="Reset zoom">
+                {IcReset}
+              </button>
+              <span className="aq-float-sep" />
+              <button
+                type="button"
+                className={`aq-float-btn${tool === "frame" ? " is-active" : ""}`}
+                onClick={() => setTool((v) => (v === "frame" ? "none" : "frame"))}
+                aria-pressed={tool === "frame"}
+                aria-label="Draw frame"
+              >
+                {IcFrame}
+              </button>
+              <button
+                type="button"
+                className={`aq-float-btn${tool === "comment" ? " is-active" : ""}`}
+                onClick={() => setTool((v) => (v === "comment" ? "none" : "comment"))}
+                aria-pressed={tool === "comment"}
+                aria-label="Add comment"
+              >
+                {IcComment}
+              </button>
+            </div>
           </div>
           <div className="preview-canvas-wrap">
             <div
@@ -488,39 +520,8 @@ export default function ImagePreview({
             </div>
           </div>
 
-          {/* Floating toolbar overlay inside the preview frame */}
-          <div className="aq-float" role="toolbar" aria-label="Preview tools">
-            <button type="button" className="aq-float-btn" onClick={zoomOut} disabled={zoom <= ZOOM_MIN} aria-label="Zoom out">
-              {IcZoomOut}
-            </button>
-            <span className="aq-float-pct" aria-live="polite">{Math.round(zoom * 100)}%</span>
-            <button type="button" className="aq-float-btn" onClick={zoomIn} disabled={zoom >= ZOOM_MAX} aria-label="Zoom in">
-              {IcZoomIn}
-            </button>
-            <span className="aq-float-sep" />
-            <button type="button" className="aq-float-btn" onClick={resetZoom} disabled={zoom === 1} aria-label="Reset zoom">
-              {IcReset}
-            </button>
-            <span className="aq-float-sep" />
-            <button
-              type="button"
-              className={`aq-float-btn${tool === "frame" ? " is-active" : ""}`}
-              onClick={() => setTool((v) => (v === "frame" ? "none" : "frame"))}
-              aria-pressed={tool === "frame"}
-              aria-label="Draw frame"
-            >
-              {IcFrame}
-            </button>
-            <button
-              type="button"
-              className={`aq-float-btn${tool === "comment" ? " is-active" : ""}`}
-              onClick={() => setTool((v) => (v === "comment" ? "none" : "comment"))}
-              aria-pressed={tool === "comment"}
-              aria-label="Add comment"
-            >
-              {IcComment}
-            </button>
-            <span className="aq-float-sep" />
+          {/* Floating full-screen toggle inside the preview frame */}
+          <div className="aq-float" role="toolbar" aria-label="Full screen">
             <button type="button" className="aq-float-btn" onClick={toggleFullscreen} aria-label={isFullscreen ? "Exit full screen" : "Full screen"}>
               {isFullscreen ? IcCompress : IcExpand}
             </button>
@@ -538,7 +539,7 @@ export default function ImagePreview({
               <div className="mc-label">{t("legModified")}</div>
             </div>
             <div className="mismatch-count-item">
-              <div className="mc-value" style={{ color: "var(--green)" }}>{counts.added}</div>
+              <div className="mc-value" style={{ color: "#16a34a" }}>{counts.added}</div>
               <div className="mc-label">{t("legAdded")}</div>
             </div>
             <div className="mismatch-count-item">
