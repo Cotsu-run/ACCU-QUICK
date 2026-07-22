@@ -5,24 +5,28 @@ import { useLang } from "../lib/LanguageContext";
 import type { TKey } from "../lib/i18n";
 
 type Slot = "doc" | "art";
+// Reason a dropped/picked file was rejected, or null when the zone is fine.
+type DropError = null | "type" | "size";
 
 const ZONES: {
   slot: Slot;
   labelKey: TKey;
   accept: string;
   formatsKey: TKey;
+  maxSize?: number;
 }[] = [
   {
     slot: "doc",
     labelKey: "sourceFile",
-    accept: ".pdf,.xlsx,.xls,.csv,.docx",
+    accept: ".docx,.xlsx,.xls",
     formatsKey: "formatsDoc",
   },
   {
     slot: "art",
     labelKey: "comparisonFile",
-    accept: ".pdf,.png,.jpg,.jpeg,.tiff,.ai,.eps",
+    accept: ".pdf,.ai",
     formatsKey: "formatsArt",
+    maxSize: 100 * 1024 * 1024, // 100 MB
   },
 ];
 
@@ -110,6 +114,20 @@ function classify(file: File): { kind: Kind; kindLabel: string; icon: React.Reac
   return { kind: "doc", kindLabel: ext.replace(".", "").toUpperCase() || "FILE", icon: IcPdf };
 }
 
+// Validate a file against an `accept` attribute string (comma-separated
+// extensions and/or MIME types, e.g. ".pdf,.docx" or "image/*").
+function matchesAccept(file: File, accept: string): boolean {
+  const tokens = accept.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (tokens.length === 0) return true;
+  const ext = (file.name.match(/\.[^.]+$/) || [""])[0].toLowerCase();
+  const mime = (file.type || "").toLowerCase();
+  return tokens.some((tok) => {
+    if (tok.startsWith(".")) return ext === tok;
+    if (tok.endsWith("/*")) return mime.startsWith(tok.slice(0, -1));
+    return mime === tok;
+  });
+}
+
 function isWebImage(file: File): boolean {
   const ext = (file.name.match(/\.[^.]+$/) || [""])[0].toLowerCase();
   const ftype = (file.type || "").toLowerCase();
@@ -163,8 +181,9 @@ function FilePreview({
   }, [file]);
 
   const dateStr = formatDate(file.lastModified);
-  const mime = file.type || "";
-  const modifiedLine = [dateStr ? `Modified: ${dateStr}` : "", mime].filter(Boolean).join(" · ");
+  // The file type is already shown as the `DOCX`/`PDF` chip — omit the raw MIME
+  // string (it's noise and its unbreakable length blew out the grid column).
+  const modifiedLine = dateStr ? `Modified: ${dateStr}` : "";
 
   return (
     <div className="file-info" style={{ display: "block" }}>
@@ -219,7 +238,7 @@ function FilePreview({
   );
 }
 
-export type ScanStatus = "idle" | "scanning" | "done";
+export type ScanStatus = "idle" | "scanning" | "done" | "error";
 export type SlotFiles = Record<Slot, File | null>;
 
 export default function UploadZone({
@@ -237,13 +256,28 @@ export default function UploadZone({
 }) {
   const { t } = useLang();
   const [files, setFiles] = useState<Record<Slot, File | null>>({ doc: null, art: null });
+  const [dropError, setDropError] = useState<Record<Slot, DropError>>({ doc: null, art: null });
   const inputRefs = { doc: useRef<HTMLInputElement>(null), art: useRef<HTMLInputElement>(null) };
 
   const setFile = (slot: Slot, file: File) => {
+    setDropError((prev) => ({ ...prev, [slot]: null }));
     setFiles((prev) => ({ ...prev, [slot]: file }));
     onFilesChange?.(); // any file change invalidates the previous scan
   };
+  // Accept the file only if it matches the zone's `accept` list and size limit;
+  // otherwise flag the reason ("type" | "size") and ignore the file. Applies to
+  // both drag-and-drop and the file picker (which only filters type, not size).
+  const acceptFile = (slot: Slot, accept: string, file: File, maxSize?: number) => {
+    if (!matchesAccept(file, accept)) {
+      setDropError((prev) => ({ ...prev, [slot]: "type" }));
+    } else if (maxSize && file.size > maxSize) {
+      setDropError((prev) => ({ ...prev, [slot]: "size" }));
+    } else {
+      setFile(slot, file);
+    }
+  };
   const removeFile = (slot: Slot) => {
+    setDropError((prev) => ({ ...prev, [slot]: null }));
     setFiles((prev) => ({ ...prev, [slot]: null }));
     if (inputRefs[slot].current) inputRefs[slot].current!.value = "";
     onFilesChange?.();
@@ -255,6 +289,7 @@ export default function UploadZone({
   };
   const reset = () => {
     setFiles({ doc: null, art: null });
+    setDropError({ doc: null, art: null });
     (["doc", "art"] as Slot[]).forEach((s) => {
       if (inputRefs[s].current) inputRefs[s].current!.value = "";
     });
@@ -268,30 +303,36 @@ export default function UploadZone({
             const file = files[zone.slot];
             return (
               <div key={zone.slot}>
-                <div className="upload-label">{t(zone.labelKey)}</div>
+                <label className="upload-label" htmlFor={`aq-upload-${zone.slot}`}>{t(zone.labelKey)}</label>
                 <div
                   className={`upload-zone${file ? " has-file" : ""}`}
                   onClick={() => !file && openPicker(zone.slot)}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
-                    if (e.dataTransfer.files[0]) setFile(zone.slot, e.dataTransfer.files[0]);
+                    if (e.dataTransfer.files[0]) acceptFile(zone.slot, zone.accept, e.dataTransfer.files[0], zone.maxSize);
                   }}
                 >
                   <input
                     ref={inputRefs[zone.slot]}
+                    id={`aq-upload-${zone.slot}`}
                     type="file"
                     accept={zone.accept}
-                    aria-label={t(zone.labelKey)}
                     onChange={(e) => {
-                      if (e.target.files?.[0]) setFile(zone.slot, e.target.files[0]);
+                      if (e.target.files?.[0]) acceptFile(zone.slot, zone.accept, e.target.files[0], zone.maxSize);
                     }}
                   />
                   {!file ? (
                     <div>
                       {IcUpload}
                       <p className="hint">{t("dropOr")} <span className="accent">{t("browse")}</span></p>
-                      <p className="sub">{t(zone.formatsKey)}</p>
+                      {dropError[zone.slot] ? (
+                        <p className="sub sub-error" role="alert">
+                          {dropError[zone.slot] === "size" ? t("dropTooLarge") : t("dropRejected")}
+                        </p>
+                      ) : (
+                        <p className="sub">{t(zone.formatsKey)}</p>
+                      )}
                     </div>
                   ) : (
                     <FilePreview
@@ -316,15 +357,17 @@ export default function UploadZone({
           <span>{t("reset")}</span>
         </button>
         <button
-          className={`btn-verify${scanStatus === "done" ? " is-scanned" : ""}`}
+          className={`btn-verify${scanStatus === "done" ? " is-scanned" : ""}${scanStatus === "error" ? " is-error" : ""}`}
           type="button"
-          disabled={scanStatus === "scanning" || (scanStatus === "idle" && !files.doc)}
-          onClick={() => { if (scanStatus === "idle") onVerify(files); }}
+          disabled={scanStatus === "scanning" || (scanStatus !== "done" && (!files.doc || !files.art))}
+          onClick={() => { if (scanStatus === "idle" || scanStatus === "error") onVerify(files); }}
         >
           {scanStatus === "scanning" ? (
             <><span className="spinner" /><span>{t("analyzing")}</span></>
           ) : scanStatus === "done" ? (
             <>{IcCheck}<span>{t("scanned")}</span></>
+          ) : scanStatus === "error" ? (
+            <>{IcRefresh}<span>{t("retry")}</span></>
           ) : (
             t("verify")
           )}

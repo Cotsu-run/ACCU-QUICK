@@ -12,7 +12,8 @@ interface LangCtx {
 const LanguageContext = createContext<LangCtx | null>(null);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
+  // Default to Thai; users can switch to English via the sidebar toggle.
+  const [lang, setLangState] = useState<Lang>("th");
 
   useEffect(() => {
     const saved = localStorage.getItem("aq-lang");

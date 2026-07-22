@@ -5,6 +5,13 @@
 
 export const OCR_LANGS = "eng+tha";
 
+// PDF pages are rasterised at this scale. A PDF user-space unit is 1/72 inch, so
+// at scale S the image has S*72 px/inch → this many source-image px per mm. This
+// lets the preview ruler report real millimetres for PDF artwork (raster image
+// uploads carry no DPI, so mm is unknown for them → pxPerMm is null there).
+const PDF_RENDER_SCALE = 2;
+export const PDF_PX_PER_MM = (PDF_RENDER_SCALE * 72) / 25.4;
+
 // Self-hosted Tesseract assets (worker, core WASM, language data) under /public.
 // Keeps OCR fully first-party — no runtime CDN fetch.
 const TESS_PATHS = {
@@ -31,6 +38,16 @@ function isImageFile(file: File): boolean {
 
 function isPdfFile(file: File): boolean {
   return ext(file.name) === ".pdf" || (file.type || "").toLowerCase() === "application/pdf";
+}
+
+function isDocxFile(file: File): boolean {
+  return ext(file.name) === ".docx" ||
+    (file.type || "").toLowerCase() === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+}
+
+function isXlsxFile(file: File): boolean {
+  return ext(file.name) === ".xlsx" ||
+    (file.type || "").toLowerCase() === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 }
 
 async function ocrImage(source: File | HTMLCanvasElement, onProgress: (p: number) => void): Promise<string> {
@@ -130,7 +147,7 @@ function fileToDataUrl(file: File): Promise<string> {
 export async function extractComparison(
   file: File,
   onProgress: (p: number) => void
-): Promise<{ text: string; pageUrls: string[]; boxes: LineBox[] }> {
+): Promise<{ text: string; pageUrls: string[]; boxes: LineBox[]; pxPerMm: number | null }> {
   if (isImageFile(file)) {
     const dataUrl = await fileToDataUrl(file);
     const dims = await imageDims(file);
@@ -142,7 +159,7 @@ export async function extractComparison(
       words: l.words.map((w) => ({ text: w.text, ...toFrac(w.bbox, dims.w, dims.h) })),
     }));
     onProgress(1);
-    return { text, pageUrls: [dataUrl], boxes };
+    return { text, pageUrls: [dataUrl], boxes, pxPerMm: null };
   }
 
   if (isPdfFile(file)) {
@@ -159,7 +176,7 @@ export async function extractComparison(
     try {
       for (let i = 1; i <= n; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 2 });
+        const viewport = page.getViewport({ scale: PDF_RENDER_SCALE });
         const canvas = document.createElement("canvas");
         canvas.width = Math.ceil(viewport.width);
         canvas.height = Math.ceil(viewport.height);
@@ -186,7 +203,7 @@ export async function extractComparison(
       }
     }
     onProgress(1);
-    return { text: pageTexts.join("\n").trim(), pageUrls, boxes };
+    return { text: pageTexts.join("\n").trim(), pageUrls, boxes, pxPerMm: PDF_PX_PER_MM };
   }
 
   // Text file or unsupported: text only, no preview boxes.
@@ -194,7 +211,7 @@ export async function extractComparison(
     ? await file.text()
     : `[Client-side extraction not yet supported for ${file.name}.]`;
   onProgress(1);
-  return { text, pageUrls: [], boxes: [] };
+  return { text, pageUrls: [], boxes: [], pxPerMm: null };
 }
 
 function pdfTextFromContent(items: { str?: string; hasEOL?: boolean }[]): string {
@@ -335,7 +352,21 @@ export async function extractText(
     return extractPdf(file, onProgress);
   }
 
-  // XLSX / DOCX / TIFF / AI / EPS — not handled client-side yet.
+  // DOCX / XLSX — read directly from the Office Open XML container (no OCR).
+  if (isDocxFile(file)) {
+    const { extractDocx } = await import("./office");
+    const text = await extractDocx(file);
+    onProgress(1);
+    return text;
+  }
+  if (isXlsxFile(file)) {
+    const { extractXlsx } = await import("./office");
+    const text = await extractXlsx(file);
+    onProgress(1);
+    return text;
+  }
+
+  // Legacy binary .xls/.doc, TIFF, AI, EPS — not handled client-side yet.
   onProgress(1);
-  return `[Client-side extraction not yet supported for ${file.name}. Office/vector handling is a later step.]`;
+  return `[Client-side extraction not yet supported for ${file.name}. Legacy/vector handling is a later step.]`;
 }

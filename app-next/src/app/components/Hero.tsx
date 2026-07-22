@@ -1,6 +1,5 @@
 "use client";
 
-import Notifications from "./Notifications";
 import { useLang } from "../lib/LanguageContext";
 
 export default function Hero() {
@@ -12,7 +11,6 @@ export default function Hero() {
           <h1 className="uh-title">{t("docReviewTitle")}</h1>
           <p className="uh-sub">{t("docReviewSub")}</p>
         </div>
-        <Notifications />
       </div>
     </div>
   );

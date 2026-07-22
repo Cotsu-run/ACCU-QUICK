@@ -56,7 +56,7 @@ export default function Sidebar({ activePage, onNavigate }: { activePage: PageId
 
   return (
     <>
-      <div className="mobile-topbar">
+      <header className="mobile-topbar">
         <button
           className="menu-toggle"
           type="button"
@@ -84,7 +84,7 @@ export default function Sidebar({ activePage, onNavigate }: { activePage: PageId
           <div className="logo-text"><span className="brand-name">ACCU QUICK</span></div>
         </div>
         <div style={{ width: 36 }} />
-      </div>
+      </header>
 
       <div
         className={`sidebar-backdrop${mobileOpen ? " open" : ""}`}
@@ -107,7 +107,7 @@ export default function Sidebar({ activePage, onNavigate }: { activePage: PageId
               </svg>
             </div>
             <div className="logo-text">
-              <h1>ACCU QUICK</h1>
+              <span className="brand-name">ACCU QUICK</span>
               <p>{t("tagline")}</p>
             </div>
           </div>

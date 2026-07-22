@@ -92,15 +92,27 @@ const IcComment = (
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </svg>
 );
+const IcRuler = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 2 22 8 8 22 2 16 16 2z" />
+    <path d="m7.5 10.5 2 2" />
+    <path d="m10.5 7.5 2 2" />
+    <path d="m13 5 2 2" />
+    <path d="m5 13 2 2" />
+  </svg>
+);
 
 const ANNO_COLOR = "#2563eb"; // user annotation colour (blue)
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 4;
 const ZOOM_STEP = 1.25;
+// Zoom level used when a mismatch row is clicked to inspect its highlighted box.
+const FOCUS_ZOOM = 2.5;
 
 type Annotation =
   | { id: string; kind: "frame"; page: number; x: number; y: number; w: number; h: number }
   | { id: string; kind: "comment"; page: number; x: number; y: number; text: string };
+type CommentAnno = Extract<Annotation, { kind: "comment" }>;
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -202,6 +214,7 @@ export default function ImagePreview({
   textA,
   textB,
   boxes = [],
+  pxPerMm = null,
   dismissed,
   onDismiss,
 }: {
@@ -210,16 +223,22 @@ export default function ImagePreview({
   textA: string;
   textB: string;
   boxes?: LineBox[];
+  // Source-image px per millimetre — set for PDF artwork (physical points),
+  // null for raster uploads (unknown DPI) → the ruler reports px instead.
+  pxPerMm?: number | null;
   dismissed: Set<number>;
   onDismiss: (n: number) => void;
 }) {
   const { t } = useLang();
   const [zoom, setZoom] = useState(1);
+  // Key of the mark currently focused by clicking its mismatch row (for highlight).
+  const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const zoomIn = () => setZoom((z) => Math.min(ZOOM_MAX, +(z * ZOOM_STEP).toFixed(2)));
   const zoomOut = () => setZoom((z) => Math.max(ZOOM_MIN, +(z / ZOOM_STEP).toFixed(2)));
-  const resetZoom = () => setZoom(1);
+  const resetZoom = () => { setZoom(1); setFocusedKey(null); setMeasure(null); };
 
   const paneRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   useEffect(() => {
     const onChange = () => setIsFullscreen(document.fullscreenElement === paneRef.current);
@@ -232,11 +251,102 @@ export default function ImagePreview({
   };
 
   // Manual annotations: draw frames and place typed comments on the artwork.
-  const [tool, setTool] = useState<"none" | "frame" | "comment">("none");
+  const [tool, setTool] = useState<"none" | "frame" | "comment" | "ruler">("none");
   const [annos, setAnnos] = useState<Annotation[]>([]);
   const [draft, setDraft] = useState<null | { page: number; x0: number; y0: number; x: number; y: number }>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const removeAnno = (id: string) => setAnnos((a) => a.filter((x) => x.id !== id));
+
+  // Ruler: a vertical caliper the user drags over a glyph to read its height in
+  // source-image pixels (the exact measure we have; the artwork carries no DPI).
+  // One live measurement at a time — an inspection aid, not a saved annotation.
+  const [mDraft, setMDraft] = useState<null | { page: number; x: number; y0: number; y1: number }>(null);
+  const [measure, setMeasure] = useState<null | { page: number; x: number; y0: number; y1: number; imgH: number }>(null);
+  // Natural pixel height of a page's source image (for fraction → px conversion).
+  const imgNaturalH = (page: number): number =>
+    wrapRef.current?.querySelectorAll<HTMLImageElement>(".preview-img-box img")[page]?.naturalHeight ?? 0;
+  // Format a measured span: real millimetres for PDF artwork, source px otherwise.
+  const fmtMeasure = (fracH: number, imgH: number): string => {
+    const px = fracH * imgH;
+    return pxPerMm ? `${(px / pxPerMm).toFixed(1)} mm` : `${Math.round(px)} px`;
+  };
+  // Ruler click target: the OCR text box under a point (word first, then its
+  // line) — gives the detected character band so a click auto-measures its height.
+  const textBoxAt = (page: number, fx: number, fy: number): { x: number; y: number; h: number } | null => {
+    const hit = (b: { x: number; y: number; w: number; h: number }) =>
+      fx >= b.x && fx <= b.x + b.w && fy >= b.y && fy <= b.y + b.h;
+    for (const b of boxes) {
+      if (b.page !== page) continue;
+      const w = b.words.find(hit);
+      if (w) return { x: w.x, y: w.y, h: w.h };
+    }
+    for (const b of boxes) {
+      if (b.page === page && hit(b)) return { x: b.x, y: b.y, h: b.h };
+    }
+    return null;
+  };
+
+  // Drag a placed comment to reposition it. A press without movement is treated
+  // as a click (opens the editor); any movement moves it instead.
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const dragRef = useRef<{ id: string; moved: boolean; boxEl: HTMLElement; offX: number; offY: number } | null>(null);
+  const onCommentDown = (e: React.PointerEvent, an: CommentAnno) => {
+    if (editing === an.id) return;
+    if ((e.target as HTMLElement).closest(".anno-del")) return; // let delete handle its own click
+    const boxEl = (e.currentTarget as HTMLElement).closest(".preview-img-box") as HTMLElement | null;
+    if (!boxEl) return;
+    const box = boxEl.getBoundingClientRect();
+    dragRef.current = {
+      id: an.id, moved: false, boxEl,
+      offX: e.clientX - (an.x * box.width + box.left),
+      offY: e.clientY - (an.y * box.height + box.top),
+    };
+    setDraggingId(an.id);
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* synthetic */ }
+  };
+  const onCommentMove = (e: React.PointerEvent) => {
+    const ds = dragRef.current;
+    if (!ds) return;
+    ds.moved = true;
+    const box = ds.boxEl.getBoundingClientRect();
+    const cx = Math.max(0, Math.min(1, (e.clientX - ds.offX - box.left) / box.width));
+    const cy = Math.max(0, Math.min(1, (e.clientY - ds.offY - box.top) / box.height));
+    setAnnos((a) => a.map((x) => (x.id === ds.id && x.kind === "comment" ? { ...x, x: cx, y: cy } : x)));
+  };
+  const onCommentUp = (an: CommentAnno) => {
+    const ds = dragRef.current;
+    dragRef.current = null;
+    setDraggingId(null);
+    if (ds && !ds.moved) setEditing(an.id); // no movement → treat as a click to edit
+  };
+
+  // Keyboard equivalents for comments (WCAG 2.1.1): Enter/Space edits, arrow keys
+  // nudge the position, Delete removes.
+  const NUDGE = 0.01; // 1% of the image per arrow press
+  const onCommentKeyDown = (e: React.KeyboardEvent, an: CommentAnno) => {
+    const move = (dx: number, dy: number) => {
+      e.preventDefault();
+      setAnnos((a) => a.map((x) =>
+        x.id === an.id && x.kind === "comment"
+          ? { ...x, x: Math.max(0, Math.min(1, x.x + dx)), y: Math.max(0, Math.min(1, x.y + dy)) }
+          : x));
+    };
+    switch (e.key) {
+      case "Enter": case " ": e.preventDefault(); setEditing(an.id); break;
+      case "ArrowUp": move(0, -NUDGE); break;
+      case "ArrowDown": move(0, NUDGE); break;
+      case "ArrowLeft": move(-NUDGE, 0); break;
+      case "ArrowRight": move(NUDGE, 0); break;
+      case "Delete": case "Backspace": e.preventDefault(); removeAnno(an.id); break;
+    }
+  };
+  // Keyboard path for placing a comment (the pointer path clicks the surface).
+  const placeCommentCenter = (page: number) => {
+    const id = uid();
+    setAnnos((a) => [...a, { id, kind: "comment", page, x: 0.5, y: 0.5, text: "" }]);
+    setEditing(id);
+    setTool("none");
+  };
 
   // Confirmation modal before dismissing a discrepancy row.
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
@@ -249,9 +359,10 @@ export default function ImagePreview({
     return { fx: (e.clientX - r.left) / r.width, fy: (e.clientY - r.top) / r.height };
   };
   const onSurfaceDown = (e: React.PointerEvent, page: number) => {
-    if (tool !== "frame") return;
     const { fx, fy } = frac(e, e.currentTarget as HTMLElement);
-    setDraft({ page, x0: fx, y0: fy, x: fx, y: fy });
+    if (tool === "frame") setDraft({ page, x0: fx, y0: fy, x: fx, y: fy });
+    else if (tool === "ruler") setMDraft({ page, x: fx, y0: fy, y1: fy });
+    else return;
     try {
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     } catch {
@@ -259,18 +370,36 @@ export default function ImagePreview({
     }
   };
   const onSurfaceMove = (e: React.PointerEvent) => {
-    if (!draft) return;
-    const { fx, fy } = frac(e, e.currentTarget as HTMLElement);
-    setDraft((d) => (d ? { ...d, x: fx, y: fy } : d));
+    if (draft) {
+      const { fx, fy } = frac(e, e.currentTarget as HTMLElement);
+      setDraft((d) => (d ? { ...d, x: fx, y: fy } : d));
+    } else if (mDraft) {
+      const { fy } = frac(e, e.currentTarget as HTMLElement);
+      setMDraft((d) => (d ? { ...d, y1: fy } : d));
+    }
   };
   const onSurfaceUp = () => {
-    if (!draft) return;
-    const x = Math.min(draft.x0, draft.x);
-    const y = Math.min(draft.y0, draft.y);
-    const w = Math.abs(draft.x - draft.x0);
-    const h = Math.abs(draft.y - draft.y0);
-    if (w > 0.01 && h > 0.01) setAnnos((a) => [...a, { id: uid(), kind: "frame", page: draft.page, x, y, w, h }]);
-    setDraft(null);
+    if (draft) {
+      const x = Math.min(draft.x0, draft.x);
+      const y = Math.min(draft.y0, draft.y);
+      const w = Math.abs(draft.x - draft.x0);
+      const h = Math.abs(draft.y - draft.y0);
+      if (w > 0.01 && h > 0.01) setAnnos((a) => [...a, { id: uid(), kind: "frame", page: draft.page, x, y, w, h }]);
+      setDraft(null);
+    } else if (mDraft) {
+      const y0 = Math.min(mDraft.y0, mDraft.y1);
+      const y1 = Math.max(mDraft.y0, mDraft.y1);
+      const imgH = imgNaturalH(mDraft.page);
+      if (y1 - y0 > 0.004) {
+        // A real drag → measure the manual span.
+        setMeasure({ page: mDraft.page, x: mDraft.x, y0, y1, imgH });
+      } else {
+        // A click → auto-measure the detected letter/word under the point.
+        const box = textBoxAt(mDraft.page, mDraft.x, mDraft.y1);
+        if (box) setMeasure({ page: mDraft.page, x: box.x, y0: box.y, y1: box.y + box.h, imgH });
+      }
+      setMDraft(null);
+    }
   };
   const onSurfaceClick = (e: React.MouseEvent, page: number) => {
     if (tool !== "comment") return;
@@ -294,17 +423,22 @@ export default function ImagePreview({
   const { mismatches, allItems, maxLines } = useMemo(() => {
     const diff = computeLineDiff(textA, textB);
     // A dismissed line is treated as matching (unchanged).
-    const items = diff.map((d, idx) => ({
-      ...d,
-      idx,
-      type: dismissed.has(d.n) ? ("unchanged" as LineType) : d.type,
-    }));
+    const items = diff
+      .map((d, idx) => ({
+        ...d,
+        idx,
+        type: dismissed.has(d.n) ? ("unchanged" as LineType) : d.type,
+      }))
+      // "added" discrepancies are excluded entirely — the added list stays empty.
+      .filter((d) => d.type !== "added");
     const ms = items.filter((d) => d.type !== "unchanged");
     return { mismatches: ms, allItems: items, maxLines: Math.max(diff.length, 1) };
   }, [textA, textB, dismissed]);
 
-  const counts = { modified: 0, added: 0, removed: 0 } as Record<Exclude<LineType, "unchanged">, number>;
-  mismatches.forEach((m) => counts[m.type as Exclude<LineType, "unchanged">]++);
+  const counts = { modified: 0, removed: 0 } as Record<"modified" | "removed", number>;
+  mismatches.forEach((m) => {
+    if (m.type === "modified" || m.type === "removed") counts[m.type]++;
+  });
   const total = mismatches.length;
 
   const pageCount = Math.max(artUrls.length, 1);
@@ -314,9 +448,11 @@ export default function ImagePreview({
   // Enclose only the specific changed word(s) of each discrepancy, coloured by
   // type. Falls back to the whole line, then to the approximate band.
   const marksFor = (m: { n: number; idx: number; type: LineType; lineA?: string; lineB?: string }): Mark[] => {
-    if (m.type === "removed") return []; // missing text isn't present in the comparison image
     const box = boxByLine.get(m.n);
-    if (!box) {
+    // "Missing" text isn't present in the comparison image (and neither is any
+    // line without a detected box) — frame its approximate band so the issue is
+    // still shown, in that cause's designated colour (missing → yellow).
+    if (m.type === "removed" || !box) {
       const page = Math.floor(m.idx / linesPerPage);
       const localIdx = m.idx - page * linesPerPage;
       return [{ key: `${m.idx}-est`, page, fx: PAD / 100, fy: (PAD + localIdx * pageBandH) / 100, fw: (100 - PAD * 2) / 100, fh: pageBandH / 100, type: m.type }];
@@ -334,6 +470,34 @@ export default function ImagePreview({
     return marks.length ? marks : [{ key: `${m.idx}-line`, page: box.page, fx: box.x, fy: box.y, fw: box.w, fh: box.h, type: m.type }];
   };
   const allMarks = mismatches.flatMap((m) => marksFor(m));
+
+  // Rows shown in the list: everything except lines the user has dismissed —
+  // confirming a deletion removes that item from the list.
+  const listItems = allItems.filter((m) => !dismissed.has(m.n));
+
+  // Click a mismatch row → zoom the preview in and centre it on that row's
+  // highlighted box, so its detail is legible. "Missing" rows have no box in the
+  // comparison image, so there is nothing to zoom to.
+  const focusMismatch = (m: { n: number; idx: number; type: LineType; lineA?: string; lineB?: string }) => {
+    const marks = marksFor(m);
+    if (!marks.length) return;
+    const target = marks[0];
+    setFocusedKey(target.key);
+    setZoom((z) => Math.max(z, FOCUS_ZOOM));
+    // Wait for the zoom transform (0.18s) to settle before measuring, then centre.
+    window.setTimeout(() => {
+      const wrap = wrapRef.current;
+      const el = wrap?.querySelector<HTMLElement>(`[data-mark="${CSS.escape(target.key)}"]`);
+      if (!wrap || !el) return;
+      const wr = wrap.getBoundingClientRect();
+      const er = el.getBoundingClientRect();
+      wrap.scrollTo({
+        left: wrap.scrollLeft + (er.left - wr.left) + er.width / 2 - wr.width / 2,
+        top: wrap.scrollTop + (er.top - wr.top) + er.height / 2 - wr.height / 2,
+        behavior: "smooth",
+      });
+    }, 220);
+  };
 
   // Download the preview with the discrepancy boxes drawn onto the actual image,
   // one file per page.
@@ -392,10 +556,9 @@ export default function ImagePreview({
   return (
     <div className="preview-section">
       <div className="preview-header">
-        <h3>{IcEye} {t("imagePreview")}</h3>
+        <h2>{IcEye} {t("imagePreview")}</h2>
         <div className="preview-legend">
           <span><span className="swatch swatch-red" />{t("legModified")}</span>
-          <span><span className="swatch swatch-green" />{t("legAdded")}</span>
           <span><span className="swatch swatch-yellow" />{t("legMissing")}</span>
         </div>
       </div>
@@ -437,9 +600,19 @@ export default function ImagePreview({
               >
                 {IcComment}
               </button>
+              <button
+                type="button"
+                className={`aq-float-btn${tool === "ruler" ? " is-active" : ""}`}
+                onClick={() => setTool((v) => (v === "ruler" ? "none" : "ruler"))}
+                aria-pressed={tool === "ruler"}
+                aria-label={t("toolRuler")}
+                title={t("toolRuler")}
+              >
+                {IcRuler}
+              </button>
             </div>
           </div>
-          <div className="preview-canvas-wrap">
+          <div className="preview-canvas-wrap" ref={wrapRef}>
             <div
               className="preview-zoom-layer"
               style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
@@ -454,7 +627,8 @@ export default function ImagePreview({
                     .map((mk) => (
                       <div
                         key={mk.key}
-                        className={`mark-box mark-box-${mk.type}`}
+                        data-mark={mk.key}
+                        className={`mark-box mark-box-${mk.type}${mk.key === focusedKey ? " is-focused" : ""}`}
                         style={{
                           top: `${mk.fy * 100}%`,
                           left: `${mk.fx * 100}%`,
@@ -476,7 +650,22 @@ export default function ImagePreview({
                           <button type="button" className="anno-del" onClick={() => removeAnno(an.id)} aria-label="Delete frame">×</button>
                         </div>
                       ) : (
-                        <div key={an.id} className="anno-comment" style={{ left: `${an.x * 100}%`, top: `${an.y * 100}%` }}>
+                        <div
+                          key={an.id}
+                          className={`anno-comment${draggingId === an.id ? " is-dragging" : ""}`}
+                          style={{ left: `${an.x * 100}%`, top: `${an.y * 100}%` }}
+                          {...(editing === an.id
+                            ? {}
+                            : {
+                                tabIndex: 0,
+                                role: "button",
+                                "aria-label": `${t("annoComment")}: ${an.text || "…"}. ${t("annoHint")}`,
+                                onPointerDown: (e: React.PointerEvent) => onCommentDown(e, an),
+                                onPointerMove: onCommentMove,
+                                onPointerUp: () => onCommentUp(an),
+                                onKeyDown: (e: React.KeyboardEvent) => onCommentKeyDown(e, an),
+                              })}
+                        >
                           {editing === an.id ? (
                             <input
                               className="anno-input"
@@ -487,7 +676,7 @@ export default function ImagePreview({
                               onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") commitComment(an.id, ""); }}
                             />
                           ) : (
-                            <span className="anno-bubble" onClick={() => setEditing(an.id)}>
+                            <span className="anno-bubble">
                               {an.text}
                               <button type="button" className="anno-del" onClick={(e) => { e.stopPropagation(); removeAnno(an.id); }} aria-label="Delete comment">×</button>
                             </span>
@@ -506,6 +695,27 @@ export default function ImagePreview({
                       }}
                     />
                   )}
+                  {mDraft && mDraft.page === p && (() => {
+                    const y0 = Math.min(mDraft.y0, mDraft.y1);
+                    const h = Math.abs(mDraft.y1 - mDraft.y0);
+                    return (
+                      <div className="measure is-draft" style={{ left: `${mDraft.x * 100}%`, top: `${y0 * 100}%`, height: `${h * 100}%` }}>
+                        <span className="measure-cap" />
+                        <span className="measure-cap measure-cap-end" />
+                        <span className="measure-label">{fmtMeasure(h, imgNaturalH(p))}</span>
+                      </div>
+                    );
+                  })()}
+                  {measure && measure.page === p && (
+                    <div className="measure" style={{ left: `${measure.x * 100}%`, top: `${measure.y0 * 100}%`, height: `${(measure.y1 - measure.y0) * 100}%` }}>
+                      <span className="measure-cap" />
+                      <span className="measure-cap measure-cap-end" />
+                      <span className="measure-label">
+                        {fmtMeasure(measure.y1 - measure.y0, measure.imgH)}
+                        <button type="button" className="anno-del" onClick={() => setMeasure(null)} aria-label={t("remove")}>×</button>
+                      </span>
+                    </div>
+                  )}
                   {tool !== "none" && (
                     <div
                       className={`anno-surface anno-surface-${tool}`}
@@ -513,6 +723,16 @@ export default function ImagePreview({
                       onPointerMove={onSurfaceMove}
                       onPointerUp={onSurfaceUp}
                       onClick={(e) => onSurfaceClick(e, p)}
+                      {...(tool === "comment"
+                        ? {
+                            tabIndex: 0,
+                            role: "button",
+                            "aria-label": t("annoAddCenter"),
+                            onKeyDown: (e: React.KeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); placeCommentCenter(p); }
+                            },
+                          }
+                        : {})}
                     />
                   )}
                 </div>
@@ -539,25 +759,39 @@ export default function ImagePreview({
               <div className="mc-label">{t("legModified")}</div>
             </div>
             <div className="mismatch-count-item">
-              <div className="mc-value" style={{ color: "#16a34a" }}>{counts.added}</div>
-              <div className="mc-label">{t("legAdded")}</div>
-            </div>
-            <div className="mismatch-count-item">
-              <div className="mc-value" style={{ color: "var(--yellow)" }}>{counts.removed}</div>
+              <div className="mc-value" style={{ color: "#b45309" }}>{counts.removed}</div>
               <div className="mc-label">{t("legMissing")}</div>
             </div>
           </div>
           <div className="mismatch-list">
-            {allItems.length === 0 ? (
+            {listItems.length === 0 ? (
               <div className="mismatch-empty">{t("noMismatches")}</div>
             ) : (
-              allItems.map((m) => {
+              listItems.map((m) => {
+                // Rows with a highlighted box in the comparison image can be
+                // clicked to zoom the preview onto that box.
+                const canFocus = m.type === "modified" || m.type === "added";
+                const isActive = canFocus && !!focusedKey && focusedKey.startsWith(`${m.idx}-`);
                 return (
-                <div className="mismatch-item" key={m.idx}>
+                <div
+                  className={`mismatch-item${canFocus ? " is-clickable" : ""}${isActive ? " is-active" : ""}`}
+                  key={m.idx}
+                  {...(canFocus
+                    ? {
+                        role: "button",
+                        tabIndex: 0,
+                        "aria-label": `Zoom to mismatch on line ${m.n}`,
+                        onClick: () => focusMismatch(m),
+                        onKeyDown: (e: React.KeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); focusMismatch(m); }
+                        },
+                      }
+                    : {})}
+                >
                   <span className={`mi-line mi-line-${m.type}`}>{m.n}</span>
                   <span className="mi-text">
                     <div className={`mi-type mi-type-${m.type}`}>
-                      {m.type === "modified" ? t("legModified") : m.type === "added" ? t("legAdded") : m.type === "removed" ? t("legMissing") : t("colUnchanged")}
+                      {m.type === "modified" ? t("legModified") : m.type === "removed" ? t("legMissing") : t("colUnchanged")}
                     </div>
                     <MismatchText type={m.type} lineA={m.lineA} lineB={m.lineB} />
                   </span>
@@ -566,7 +800,7 @@ export default function ImagePreview({
                       className="mi-delete"
                       type="button"
                       aria-label={`Dismiss mismatch on line ${m.n}`}
-                      onClick={() => setPendingDelete(m.n)}
+                      onClick={(e) => { e.stopPropagation(); setPendingDelete(m.n); }}
                     >
                       {IcTrash}
                     </button>
