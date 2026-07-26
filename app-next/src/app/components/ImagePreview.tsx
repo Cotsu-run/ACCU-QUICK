@@ -423,21 +423,18 @@ export default function ImagePreview({
   const { mismatches, allItems, maxLines } = useMemo(() => {
     const diff = computeLineDiff(textA, textB);
     // A dismissed line is treated as matching (unchanged).
-    const items = diff
-      .map((d, idx) => ({
-        ...d,
-        idx,
-        type: dismissed.has(d.n) ? ("unchanged" as LineType) : d.type,
-      }))
-      // "added" discrepancies are excluded entirely — the added list stays empty.
-      .filter((d) => d.type !== "added");
+    const items = diff.map((d, idx) => ({
+      ...d,
+      idx,
+      type: dismissed.has(d.n) ? ("unchanged" as LineType) : d.type,
+    }));
     const ms = items.filter((d) => d.type !== "unchanged");
     return { mismatches: ms, allItems: items, maxLines: Math.max(diff.length, 1) };
   }, [textA, textB, dismissed]);
 
-  const counts = { modified: 0, removed: 0 } as Record<"modified" | "removed", number>;
+  const counts = { modified: 0, added: 0, removed: 0 } as Record<"modified" | "added" | "removed", number>;
   mismatches.forEach((m) => {
-    if (m.type === "modified" || m.type === "removed") counts[m.type]++;
+    if (m.type === "modified" || m.type === "added" || m.type === "removed") counts[m.type]++;
   });
   const total = mismatches.length;
 
@@ -559,6 +556,7 @@ export default function ImagePreview({
         <h2>{IcEye} {t("imagePreview")}</h2>
         <div className="preview-legend">
           <span><span className="swatch swatch-red" />{t("legModified")}</span>
+          <span><span className="swatch swatch-green" />{t("legAdded")}</span>
           <span><span className="swatch swatch-yellow" />{t("legMissing")}</span>
         </div>
       </div>
@@ -759,6 +757,10 @@ export default function ImagePreview({
               <div className="mc-label">{t("legModified")}</div>
             </div>
             <div className="mismatch-count-item">
+              <div className="mc-value" style={{ color: "#16a34a" }}>{counts.added}</div>
+              <div className="mc-label">{t("legAdded")}</div>
+            </div>
+            <div className="mismatch-count-item">
               <div className="mc-value" style={{ color: "#b45309" }}>{counts.removed}</div>
               <div className="mc-label">{t("legMissing")}</div>
             </div>
@@ -791,7 +793,7 @@ export default function ImagePreview({
                   <span className={`mi-line mi-line-${m.type}`}>{m.n}</span>
                   <span className="mi-text">
                     <div className={`mi-type mi-type-${m.type}`}>
-                      {m.type === "modified" ? t("legModified") : m.type === "removed" ? t("legMissing") : t("colUnchanged")}
+                      {m.type === "modified" ? t("legModified") : m.type === "added" ? t("legAdded") : m.type === "removed" ? t("legMissing") : t("colUnchanged")}
                     </div>
                     <MismatchText type={m.type} lineA={m.lineA} lineB={m.lineB} />
                   </span>
